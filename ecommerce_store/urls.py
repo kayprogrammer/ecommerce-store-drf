@@ -1,23 +1,99 @@
-"""
-URL configuration for ecommerce_store project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-
 from django.contrib import admin
-from django.urls import path
+from django.http import JsonResponse
+from django.urls import include, path
+from django.conf.urls.static import static
+from django.conf import settings
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+)
+from drf_spectacular.utils import extend_schema
+from adrf.views import APIView
+
+from apps.common.responses import CustomResponse
+from apps.common.serializers import SuccessResponseSerializer
+
+
+class HealthCheckView(APIView):
+    """
+    View to check the health of the API.
+
+    This endpoint provides a simple health check for the API to ensure that it is running.
+
+    Methods:
+        get(request): Responds with a success message "pong" to indicate that the API is healthy.
+    """
+
+    @extend_schema(
+        "/",
+        summary="API Health Check",
+        description="This endpoint checks the health of the API",
+        responses=SuccessResponseSerializer,
+        tags=["HealthCheck"],
+    )
+    async def get(self, request):
+        """
+        Handle GET requests for the health check endpoint.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            JsonResponse: A success response with the message "pong".
+        """
+        return CustomResponse.success(message="pong")
+
+
+def handler404(request, exception=None):
+    """
+    Custom 404 error handler.
+
+    Returns a JSON response with a "Not Found" message and a 404 status code.
+
+    Args:
+        request (Request): The HTTP request object.
+        exception (Exception, optional): The exception that caused the error.
+
+    Returns:
+        JsonResponse: The 404 error response.
+    """
+    response = JsonResponse({"status": "failure", "message": "Not Found"})
+    response.status_code = 404
+    return response
+
+
+def handler500(request, exception=None):
+    """
+    Custom 500 error handler.
+
+    Returns a JSON response with a "Server Error" message and a 500 status code.
+
+    Args:
+        request (Request): The HTTP request object.
+        exception (Exception, optional): The exception that caused the error.
+
+    Returns:
+        JsonResponse: The 500 error response.
+    """
+    response = JsonResponse({"status": "failure", "message": "Server Error"})
+    response.status_code = 500
+    return response
+
+
+handler404 = handler404
+handler500 = handler500
 
 urlpatterns = [
+    path("schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
     path("admin/", admin.site.urls),
+    path("api/v1/general/", include("apps.general.urls")),
+    path("api/v1/healthcheck/", HealthCheckView.as_view()),
 ]
+
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

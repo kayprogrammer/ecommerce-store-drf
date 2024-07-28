@@ -52,12 +52,15 @@ THIRD_PARTY_APPS = [
     "cloudinary",
     "cloudinary_storage",
     "drf_spectacular",
+    "import_export",
 ]
 
 LOCAL_APPS = [
     "apps.common",
     "apps.general",
     "apps.accounts",
+    "apps.profiles",
+    "apps.sellers",
     "apps.shop",
 ]
 
@@ -82,7 +85,7 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "SOCIALNET API",
+    "TITLE": "E-STORE API",
     "APPEND_COMPONENTS": {
         "securitySchemes": {
             "bearerAuth": {
@@ -107,7 +110,6 @@ SPECTACULAR_SETTINGS = {
 }
 
 MIDDLEWARE = [
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -230,25 +232,25 @@ FRONTEND_URL = config("FRONTEND_URL")
 
 JAZZMIN_SETTINGS = {
     # title of the window (Will default to current_admin_site.site_title if absent or None)
-    "site_title": "E-STORE V1 ADMIN",
+    "site_title": "E-STORE ADMIN",
     # Title on the login screen (19 chars max) (defaults to current_admin_site.site_header if absent or None)
-    "site_header": "E-STORE V1",
+    "site_header": "E-STORE",
     # Logo to use for your site, must be present in static files, used for brand on top left
-    "site_logo": "media/banner2-icon3.png",
+    "site_logo": "media/logo.png",
     # CSS classes that are applied to the logo above
     "site_logo_classes": "img-circle",
     # Logo to use for your site, must be present in static files, used for login form logo (defaults to site_logo)
-    "login_logo": "media/banner2-icon3.png",
+    "login_logo": "media/logo.png",
     # Relative path to a favicon for your site, will default to site_logo if absent (ideally 32x32 px)
     "site_icon": "media/logo.png",
     # Welcome text on the login screen
-    "welcome_sign": "Welcome to the E-Store v1 Admin Section",
+    "welcome_sign": "Welcome to the E-Store Admin Section",
     # Copyright on the footer
-    "copyright": "E-Store v1 Ltd",
+    "copyright": "E-Store Ltd",
     # The model admin to search from the search bar, search bar omitted if excluded
     "search_model": "accounts.User",
     # Field name on user model that contains avatar ImageField/URLField/Charfield or a callable that receives the user
-    "user_avatar": "avatar",
+    "user_avatar": "avatar_url",
     ############
     # Top Menu #
     ############
@@ -272,7 +274,7 @@ JAZZMIN_SETTINGS = {
     #############
     # Additional links to include in the user menu on the top right ("app" url type is not allowed)
     "usermenu_links": [
-        {"name": "E-STORE V1 FrontPage", "url": FRONTEND_URL, "new_window": True},
+        {"name": "E-STORE FrontPage", "url": FRONTEND_URL, "new_window": True},
         {"model": "accounts.user"},
     ],
     #############
@@ -293,6 +295,18 @@ JAZZMIN_SETTINGS = {
     "icons": {
         "accounts.Group": "fas fa-users",
         "accounts.user": "fas fa-user-cog",
+        "general.sitedetail": "fas fa-info-circle",
+        "general.subscriber": "fas fa-users",
+        "general.message": "fas fa-comments",
+        "shop.review": "fas fa-thumbs-up",
+        "shop.category": "fas fa-list",
+        "shop.product": "fas fa-list-alt",
+        "shop.colour": "fas fa-paint-brush",
+        "shop.size": "far fa-circle",
+        "shop.shippingaddress": "fas fa-map-marker",
+        "shop.country": "fas fa-flag",
+        "shop.orderitem": "fas fa-shopping-cart",
+        "shop.order": "fas fa-money-bill",
         "sites.site": "fas fa-globe",
     },
     # Icons that are used when one is not manually specified
@@ -340,3 +354,5 @@ FRONTEND_URL = config("FRONTEND_URL")
 
 ACCESS_TOKEN_EXPIRE_MINUTES = config("ACCESS_TOKEN_EXPIRE_MINUTES")
 REFRESH_TOKEN_EXPIRE_MINUTES = config("REFRESH_TOKEN_EXPIRE_MINUTES")
+
+DEFAULT_AVATAR_URL = config("DEFAULT_AVATAR_URL")
