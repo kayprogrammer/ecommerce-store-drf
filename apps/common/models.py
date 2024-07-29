@@ -1,4 +1,5 @@
 import secrets
+from typing import Any
 import uuid
 from django.db import models
 from .managers import GetOrNoneManager
@@ -19,6 +20,7 @@ class BaseModel(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
 
     objects = GetOrNoneManager()
 
@@ -40,6 +42,10 @@ class BaseModel(models.Model):
             except:
                 url = None
         return url
+
+    def delete(self, *args, **kwargs):
+        self.is_deleted = True
+        self.save()
 
 
 def generate_unique_code(model: BaseModel, field: str) -> str:

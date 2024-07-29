@@ -31,6 +31,7 @@ class ErrorCode:
     INVALID_VALUE = "invalid_value"
     NOT_ALLOWED = "not_allowed"
     INVALID_DATA_TYPE = "invalid_data_type"
+    INVALID_CLIENT_ID = "invalid_client_id"
 
 
 class RequestError(APIException):

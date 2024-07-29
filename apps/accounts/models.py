@@ -43,6 +43,8 @@ class User(AbstractBaseUser, BaseModel, PermissionsMixin):
     account_type = models.CharField(
         max_length=6, choices=ACCOUNT_TYPE_CHOICES, default="BUYER"
     )
+    access = models.CharField(max_length=10000, null=True)
+    refresh = models.CharField(max_length=10000, null=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name"]
