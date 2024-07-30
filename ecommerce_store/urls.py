@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.urls import include, path
 from django.conf.urls.static import static
 from django.conf import settings
@@ -83,15 +84,26 @@ def handler500(request, exception=None):
 handler404 = handler404
 handler500 = handler500
 
+class CustomSwaggerView(SpectacularSwaggerView):
+    template_name = 'custom_swagger.html'
+
+    def get(self, request, *args, **kwargs):
+        context = {
+            'google_client_id': settings.GOOGLE_CLIENT_ID,  # Replace with your Google client ID
+            'auth_endpoint': '/api/v1/auth/google/',
+        }
+        return render(request, self.template_name, context)
+    
 urlpatterns = [
-    path("schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "",
-        SpectacularSwaggerView.as_view(url_name="schema"),
+        CustomSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
     ),
     path("admin/", admin.site.urls),
     path("api/v1/general/", include("apps.general.urls")),
+    path("api/v1/auth/", include("apps.accounts.urls")),
     path("api/v1/healthcheck/", HealthCheckView.as_view()),
 ]
 

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Swagger UI</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.23.11/swagger-ui.css" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.23.11/swagger-ui-bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.23.11/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            // Initialize Swagger UI
+            const ui = SwaggerUIBundle({
+                url: '/api/schema/',
+                dom_id: '#swagger-ui',
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                layout: "StandaloneLayout",
+                onComplete: function() {
+                    console.log("Yeaaaa")
+                    const originalAuthButton = document.querySelector('.auth-wrapper .authorize');
+                    if (originalAuthButton) {
+                        originalAuthButton.addEventListener('click', function() {
+                            alert("Yaaaaaaaaaaa")
+                            // Initialize Google Sign-In
+                            google.accounts.id.initialize({
+                                client_id: '{{ google_client_id }}',
+                                callback: function(response) {
+                                    const authToken = response.credential;
+                                    // Send the auth token to your endpoint to generate access and refresh tokens
+                                    fetch(`{{ auth_endpoint }}${authToken}/`, {
+                                        method: 'GET',
+                                    }).then(response => {
+                                        var resp = response.json()
+                                        console.log(resp)
+                                    })
+                                      .then(data => {
+                                        const bearerInput = document.querySelector('.auth-container input[type="text"]');
+                                        console.log(bearerInput)
+                                        console.log(data)
+                                        ui.preauthorizeApiKey("bearer", data.access);
+                                        if (bearerInput) {
+                                            bearerInput.value = `Bearer ${data.access}`;
+                                        }
+                                      });
+                                }
+                            });
+
+                            // Render the Google Sign-In button
+                            google.accounts.id.prompt();
+                        });
+                    }
+                }
+            });
+        };
+    </script>
+</body>
+</html>

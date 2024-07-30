@@ -1,3 +1,4 @@
+from uuid import UUID
 from django.conf import settings
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
@@ -71,11 +72,11 @@ class Authentication:
         return "".join(random.choices(string.ascii_letters + string.digits, k=length))
 
     # generate access token based and encode user's id
-    def create_access_token(user_id: str):
+    def create_access_token(user_id: UUID):
         expire = datetime.now(UTC) + timedelta(
             minutes=int(settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         )
-        to_encode = {"exp": expire, "user_id": user_id}
+        to_encode = {"exp": expire, "user_id": str(user_id)}
         encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
