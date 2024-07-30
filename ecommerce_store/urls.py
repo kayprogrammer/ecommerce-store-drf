@@ -89,7 +89,8 @@ class CustomSwaggerView(SpectacularSwaggerView):
 
     def get(self, request, *args, **kwargs):
         context = {
-            'google_client_id': settings.GOOGLE_CLIENT_ID,  # Replace with your Google client ID
+            'google_client_id': settings.GOOGLE_CLIENT_ID,
+            'facebook_app_id': settings.FACEBOOK_APP_ID,
             'auth_endpoint': '/api/v1/auth/google/',
         }
         return render(request, self.template_name, context)
