@@ -102,8 +102,6 @@ SPECTACULAR_SETTINGS = {
     ],
     "DESCRIPTION": """
         An Ecommerce Store API built with Django Rest Framework
-        Authentication is with Google or Facebook.
-        To test the protected endpoints, I've made it easier so you won't have to create your google or facebook auth frontend to generate the auth token for the request. Just use the authorize button and wait for the google dialog and tokens will be generated.
     """,
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,

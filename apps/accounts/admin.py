@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.models import Group as DjangoGroup
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from .forms import CustomAdminUserChangeForm, CustomAdminUserCreationForm
 from .models import User
@@ -77,7 +78,15 @@ class UserAdmin(BaseUserAdmin):
         ),
         (
             _("Personal Information"),
-            {"fields": ("first_name", "last_name", "avatar", "account_type")},
+            {
+                "fields": (
+                    "first_name",
+                    "last_name",
+                    "avatar",
+                    "avatar_url",
+                    "account_type",
+                )
+            },
         ),
         (
             _("Permissions and Groups"),
@@ -116,6 +125,7 @@ class UserAdmin(BaseUserAdmin):
     )
 
     search_fields = ["email", "first_name", "last_name"]
+    readonly_fields = ("avatar_url",)
 
     def get_readonly_fields(self, request, obj=None):
         """
@@ -138,6 +148,9 @@ class UserAdmin(BaseUserAdmin):
             ]
             return readonly_fields
         return self.readonly_fields
+
+    def avatar_url(self, obj):
+        return mark_safe(f"<a href='{obj.avatar_url}'>{obj.avatar_url}</a>")
 
 
 # Register the User and Group models with the admin site.

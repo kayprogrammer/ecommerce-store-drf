@@ -37,6 +37,7 @@ class User(AbstractBaseUser, BaseModel, PermissionsMixin):
     )
     email = models.EmailField(verbose_name=(_("Email address")), unique=True)
     avatar = models.ImageField(upload_to="avatars/", null=True)
+    social_avatar = models.URLField(default=settings.DEFAULT_AVATAR_URL)
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -74,9 +75,10 @@ class User(AbstractBaseUser, BaseModel, PermissionsMixin):
         """
         return self.full_name
 
+    @property
     def avatar_url(self):
         try:
             url = self.avatar.url
         except:
-            url = settings.DEFAULT_AVATAR_URL
+            url = self.social_avatar
         return url

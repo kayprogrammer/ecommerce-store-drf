@@ -5,6 +5,8 @@ from google.oauth2 import id_token
 from datetime import datetime, timedelta, UTC
 import jwt, random, string, facebook
 
+from apps.common.exceptions import ErrorCode
+
 from .senders import EmailUtil
 
 from .models import User
@@ -20,12 +22,13 @@ class Google:
         """
         try:
             idinfo = id_token.verify_oauth2_token(auth_token, google_requests.Request())
-
-            if "accounts.google.com" in idinfo["iss"]:
-                return idinfo
-
+            if not "sub" in idinfo.keys():
+                return None, ErrorCode.INVALID_TOKEN, "Invalid Auth Token"
+            if idinfo["aud"] != settings.GOOGLE_CLIENT_ID:
+                return None, ErrorCode.INVALID_CLIENT_ID, "Invalid Client ID"
+            return idinfo, None, None
         except:
-            return None
+            return None, ErrorCode.INVALID_TOKEN, "Invalid Auth Token"
 
 
 class Facebook:
@@ -38,15 +41,20 @@ class Facebook:
         """
         validate method Queries the facebook GraphAPI to fetch the user info
         """
+        graph = facebook.GraphAPI(access_token=auth_token)
         try:
-            graph = facebook.GraphAPI(access_token=auth_token)
-            profile = graph.request("/me?fields=name,email")
-            return profile
-        except:
-            return None
+            app = graph.request(f"/app")
+            if app["id"] != settings.FACEBOOK_APP_ID:
+                return None, ErrorCode.INVALID_CLIENT_ID, "Invalid Client ID"
+        except facebook.GraphAPIError:
+            return None, ErrorCode.INVALID_TOKEN, "Invalid Auth Token"
+        profile = graph.request("/me?fields=name,email")
+        return profile, None, None
 
 
-async def register_social_user(email: str, name: str, avatar: str = None):
+async def register_social_user(
+    email: str, name: str, avatar: str = settings.DEFAULT_AVATAR_URL
+):
     user = await User.objects.aget_or_none(email=email)
     if not user:
         name = name.split()
@@ -57,7 +65,7 @@ async def register_social_user(email: str, name: str, avatar: str = None):
             last_name=last_name,
             email=email,
             password=settings.SOCIAL_SECRET,
-            avatar=avatar or settings.DEFAULT_AVATAR_URL,
+            social_avatar=avatar,
         )
         EmailUtil.send_welcome_email(user)
     return user

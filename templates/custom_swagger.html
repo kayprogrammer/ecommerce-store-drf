@@ -1,8 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>E-STORE API</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.23.11/swagger-ui.css" rel="stylesheet">
+    {% block head %}
+    <title>{{ title|default:"Swagger" }}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% if favicon_href %}<link rel="icon" href="{{ favicon_href }}">{% endif %}
+    <link rel="stylesheet" href="{{ swagger_ui_css }}">
+    <style>
+      html { box-sizing: border-box; overflow-y: scroll; }
+      *, *:after, *:before { box-sizing: inherit; }
+      body { background: #fafafa; margin: 0; }
+    </style>
+    {% endblock head %}
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
     <style>
@@ -41,125 +51,153 @@
     </style>
 </head>
 <body>
-    <div id="fb-root"></div>
-    <div id="swagger-ui"></div>
+    {% block body %}
+        <div id="fb-root"></div>
+        <div id="swagger-ui"></div>
+        <script src="{{ swagger_ui_bundle }}"></script>
+        <script src="{{ swagger_ui_standalone }}"></script>
+        {% if script_url %}
+            <script src="{{ script_url }}"></script>
+        {% else %}
+            <script>
+                {% include template_name_js %}
+            </script>
+        {% endif %}
+        <script>
+            window.fbAsyncInit = function () {
+                FB.init({
+                    appId: "{{ facebook_app_id }}",
+                    cookie: true, // Enable cookies to allow the server to access the session.
+                    xfbml: true, // Parse social plugins on this webpage.
+                    version: "v10.0", // Use this Graph API version for this call.
+                });
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.23.11/swagger-ui-bundle.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.23.11/swagger-ui-standalone-preset.js"></script>
-    <script>
-        window.fbAsyncInit = function () {
-            FB.init({
-                appId: "{{ facebook_app_id }}",
-                cookie: true, // Enable cookies to allow the server to access the session.
-                xfbml: true, // Parse social plugins on this webpage.
-                version: "v10.0", // Use this Graph API version for this call.
-            });
+                // Check the initial login status
+                FB.getLoginStatus(function(response) {
+                    if (response.status === "connected") {
+                        FB.logout()
+                    }
+                });
+            };
+            window.onload = function() {
+                // Initialize Swagger UI
+                const ui = SwaggerUIBundle({
+                    url: '/api/schema/',
+                    dom_id: '#swagger-ui',
+                    presets: [
+                        SwaggerUIBundle.presets.apis,
+                        SwaggerUIStandalonePreset
+                    ],
+                    layout: "StandaloneLayout",
+                    requestInterceptor: (request) => {
+                        // Attach the CSRF token to the request
+                        request.headers['X-CSRFToken'] = '{{ csrf_token }}';
+                        return request;
+                    },
+                    onComplete: function() {
+                        // Track if the Facebook button has been added
+                        let facebookButtonAdded = false;
 
-            // Check the initial login status
-            FB.getLoginStatus(function(response) {
-                if (response.status === "connected") {
-                    FB.logout()
-                }
-            });
-        };
-        window.onload = function() {
-            // Initialize Swagger UI
-            const ui = SwaggerUIBundle({
-                url: '/api/schema/',
-                dom_id: '#swagger-ui',
-                presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIStandalonePreset
-                ],
-                layout: "StandaloneLayout",
-                onComplete: function() {
-                    // Track if the Facebook button has been added
-                    let facebookButtonAdded = false;
+                        // Track if the Google button has been added
+                        let googleButtonAdded = false;
 
-                    // Track if the Google button has been added
-                    let googleButtonAdded = false;
+                        // MutationObserver to monitor changes in Swagger UI
+                        const observer = new MutationObserver(mutations => {
+                            mutations.forEach(mutation => {
+                                if (mutation.type === 'childList') {
+                                    if (!facebookButtonAdded) {
+                                    const facebookEndpointDialog = document.querySelector('#operations-Auth-auth_facebook_create')
+                                    const cancelButton = facebookEndpointDialog.querySelector('.cancel');
+                                    if (facebookEndpointDialog && cancelButton) {
+                                        observer.disconnect();
+                                        const fbButton = document.createElement('button');
+                                        fbButton.className = 'fb-button';
+                                        fbButton.innerHTML = '<p>Generate FB Token</p>';
+                                        fbButton.onclick = function() {
+                                            const tokenInputElement = facebookEndpointDialog.querySelector('textarea.body-param__text');
+                                            FB.login(function(response) {
+                                                if (response.authResponse) {
+                                                    var accessToken = response.authResponse.accessToken;
 
-                    // MutationObserver to monitor changes in Swagger UI
-                    const observer = new MutationObserver(mutations => {
-                        mutations.forEach(mutation => {
-                            if (mutation.type === 'childList') {
-                                if (!facebookButtonAdded) {
-                                const facebookEndpointDialog = document.querySelector('#operations-auth-auth_facebook_retrieve')
-                                const cancelButton = facebookEndpointDialog.querySelector('.cancel');
-                                if (cancelButton) {
-                                    observer.disconnect();
-                                    const fbButton = document.createElement('button');
-                                    fbButton.className = 'fb-button';
-                                    fbButton.innerHTML = '<p>Generate FB Token</p>';
-                                    fbButton.onclick = function() {
-                                        const tokenInputElement = facebookEndpointDialog.querySelector('.parameters-col_description input[type="text"]');
-                                        FB.login(function(response) {
-                                            if (response.authResponse) {
-                                                // User is logged in
-                                                var accessToken = response.authResponse.accessToken;
-                                                tokenInputElement.value = accessToken;
-                                                const event = new Event('input', { bubbles: true });
-                                                event.simulated = true
-                                                tokenInputElement.dispatchEvent(event);
-                                            } 
-                                        }, {scope: 'public_profile,email', auth_type: 'reauthorize'});
-                                    };
-                                    cancelButton.parentNode.insertBefore(fbButton, cancelButton);
-
-                                    // Mark the button as added
-                                    facebookButtonAdded = true;
-
-                                    // Reconnect the observer
-                                    observer.observe(document.body, {
-                                        childList: true,
-                                        subtree: true
-                                    });
-                                }
-                            }
-                            
-                                if (!googleButtonAdded) {
-                                    const googleEndpointDialog = document.querySelector('#operations-auth-auth_google_retrieve');
-                                    if (googleEndpointDialog) {
-                                        const cancelButton = googleEndpointDialog.querySelector('.cancel');
-                                        if (cancelButton) {
-                                            observer.disconnect();
-                                            const googleButton = document.createElement('button');
-                                            googleButton.className = 'google-button';
-                                            googleButton.innerHTML = '<p>Generate Google Token</p>';
-                                            googleButton.onclick = function() {
-                                                const tokenInputElement = googleEndpointDialog.querySelector('.parameters-col_description input[type="text"]');
-                                                google.accounts.id.initialize({
-                                                    client_id: '{{ google_client_id }}',
-                                                    callback: function(response) {
-                                                        const authToken = response.credential;
-                                                        tokenInputElement.value = authToken;
-                                                        const event = new Event('input', { bubbles: true });
-                                                        event.simulated = true
-                                                        tokenInputElement.dispatchEvent(event);
+                                                    // Hack to set token to the text area and trigger it
+                                                    let lastValue = tokenInputElement.value;
+                                                    tokenInputElement.value = JSON.stringify({token: accessToken});
+                                                    const inputEvent = new Event('input', { bubbles: true });
+                                                    let tracker = tokenInputElement._valueTracker;
+                                                    if (tracker) {
+                                                        tracker.setValue(lastValue);
                                                     }
-                                                });
+                                                    tokenInputElement.dispatchEvent(inputEvent);
+                                                } 
+                                            }, {scope: 'public_profile,email', auth_type: 'reauthorize'});
+                                        };
+                                        cancelButton.parentNode.insertBefore(fbButton, cancelButton);
 
-                                                // Render the Google Sign-In button
-                                                google.accounts.id.prompt();
-                                            };
-                                            cancelButton.parentNode.insertBefore(googleButton, cancelButton);
-                                            googleButtonAdded = true;
-                                            observer.observe(document.body, { childList: true, subtree: true });
+                                        cancelButton.addEventListener('click', () => {
+                                                    const googleButton = document.querySelector('.google-button');
+                                                    if (googleButton) googleButton.remove();
+                                                    googleButtonAdded = false;
+                                                });
+                                        // Mark the button as added
+                                        facebookButtonAdded = true;
+
+                                        // Reconnect the observer
+                                        observer.observe(document.body, {
+                                            childList: true,
+                                            subtree: true
+                                        });
+                                    }
+                                }
+                                
+                                    if (!googleButtonAdded) {
+                                        const googleEndpointDialog = document.querySelector('#operations-Auth-auth_google_create');
+                                        if (googleEndpointDialog) {
+                                            const cancelButton = googleEndpointDialog.querySelector('.cancel');
+                                            if (cancelButton) {
+                                                observer.disconnect();
+                                                const googleButton = document.createElement('button');
+                                                googleButton.className = 'google-button';
+                                                googleButton.innerHTML = '<p>Generate Google Token</p>';
+                                                googleButton.onclick = function() {
+                                                    const tokenInputElement = googleEndpointDialog.querySelector('textarea.body-param__text');
+                                                    google.accounts.id.initialize({
+                                                        client_id: '{{ google_client_id }}',
+                                                        callback: function(response) {
+                                                            const authToken = response.credential;
+
+                                                            let lastValue = tokenInputElement.value;
+                                                            tokenInputElement.value = JSON.stringify({token: authToken});
+                                                            const inputEvent = new Event('input', { bubbles: true });
+                                                            let tracker = tokenInputElement._valueTracker;
+                                                            if (tracker) {
+                                                                tracker.setValue(lastValue);
+                                                            }
+                                                            tokenInputElement.dispatchEvent(inputEvent);
+                                                        }
+                                                    });
+
+                                                    // Render the Google Sign-In button
+                                                    google.accounts.id.prompt();
+                                                };
+                                                cancelButton.parentNode.insertBefore(googleButton, cancelButton);
+                                                googleButtonAdded = true;
+                                                observer.observe(document.body, { childList: true, subtree: true });
+                                            }
                                         }
                                     }
                                 }
-                            }
+                            });
                         });
-                    });
 
-                    // Start observing the body for changes
-                    observer.observe(document.body, {
-                        childList: true,
-                        subtree: true
-                    });
-                }
-            });
-        };
-    </script>
+                        // Start observing the body for changes
+                        observer.observe(document.body, {
+                            childList: true,
+                            subtree: true
+                        });
+                    }
+                });
+            };
+        </script>
+    {% endblock %}
 </body>
 </html>

@@ -47,7 +47,7 @@ class CustomUserManager(BaseUserManager, GetOrNoneManager):
             self.email_validator(email)
         else:
             raise ValueError(_("Base User Account: An email address is required"))
-        
+
     def create_user(self, first_name, last_name, email, password, **extra_fields):
         """
         Creates and saves a regular user with the given details.
@@ -111,7 +111,7 @@ class CustomUserManager(BaseUserManager, GetOrNoneManager):
         else:
             raise ValueError(_("Admin Account: An email address is required"))
         return extra_fields
-    
+
     def create_superuser(self, first_name, last_name, email, password, **extra_fields):
         """
         Creates and saves a superuser with the given details.
