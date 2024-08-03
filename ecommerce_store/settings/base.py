@@ -93,11 +93,18 @@ SPECTACULAR_SETTINGS = {
                 "scheme": "bearer",
                 "bearerFormat": "JWT",
             },
+            "guestUserID": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "Guest-User-ID",
+                "description": "For guest wishlists and cart. The ID can come form any endpoint that requires the guest ID",
+            },
         }
     },
     "SECURITY": [
         {
             "bearerAuth": [],
+            "Guest-User-ID": [],
         }
     ],
     "DESCRIPTION": """
@@ -119,6 +126,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.common.middlewares.GuestIDMiddleware",
 ]
 
 ROOT_URLCONF = "ecommerce_store.urls"

@@ -82,3 +82,9 @@ class User(AbstractBaseUser, BaseModel, PermissionsMixin):
         except:
             url = self.social_avatar
         return url
+
+
+class GuestUser(BaseModel):
+    @property
+    def is_authenticated(self):
+        return False

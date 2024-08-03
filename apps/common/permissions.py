@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission
 from apps.accounts.auth import Authentication
+from apps.accounts.models import GuestUser
 from apps.common.exceptions import ErrorCode, RequestError
 
 
@@ -33,10 +34,16 @@ class IsAuthenticatedCustom(BasePermission):
 class IsAuthenticatedOrGuestCustom(BasePermission):
     def has_permission(self, request, view):
         http_auth = request.META.get("HTTP_AUTHORIZATION")
-        request.user = None
+        guest_id = request.META.get("HTTP_GUEST_USER_ID")
         if http_auth:
             user = get_user(http_auth)
             request.user = user
+        else:
+            guest = GuestUser.objects.get_or_none(id=guest_id)
+            if not guest:
+                guest = GuestUser.objects.create()
+            request.user = guest
+            request.guest_id = guest.id
         return True
 
 
