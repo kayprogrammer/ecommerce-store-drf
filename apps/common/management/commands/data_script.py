@@ -166,13 +166,13 @@ class CreateData(object):
                 rev1 = Review(
                     product=product,
                     user=admin,
-                    text=random.choice(REVIEWS),
+                    text=REVIEWS[0],
                     rating=random.choice(rating_choices),
                 )
                 rev2 = Review(
                     product=product,
                     user=reviewer,
-                    text=random.choice(REVIEWS),
+                    text=random.choice(REVIEWS[1:]),
                     rating=random.choice(rating_choices),
                 )
                 reviews_to_create.extend([rev1, rev2])

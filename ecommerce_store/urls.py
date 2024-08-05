@@ -113,6 +113,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/general/", include("apps.general.urls")),
     path("api/v1/auth/", include("apps.accounts.urls")),
+    path("api/v1/shop/", include("apps.shop.urls")),
     path("api/v1/healthcheck/", HealthCheckView.as_view()),
 ]
 
