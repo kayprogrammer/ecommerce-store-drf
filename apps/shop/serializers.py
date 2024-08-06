@@ -1,7 +1,13 @@
 from rest_framework import serializers
 
+from apps.common.serializers import (
+    PaginatedResponseDataSerializer,
+)
+from apps.shop.choices import RATING_CHOICES
+from apps.shop.models import Product
 
-class SellerSerializer(serializers.Serializer):
+
+class UserSerializer(serializers.Serializer):
     name = serializers.CharField(source="full_name")
     avatar = serializers.CharField(source="avatar_url")
 
@@ -13,15 +19,42 @@ class CategorySerializer(serializers.Serializer):
 
 
 class ProductSerializer(serializers.Serializer):
-    seller = SellerSerializer()
+    seller = UserSerializer()
     name = serializers.CharField()
     slug = serializers.SlugField()
     desc = serializers.CharField()
     price_old = serializers.DecimalField(max_digits=10, decimal_places=2)
     price_current = serializers.DecimalField(max_digits=10, decimal_places=2)
     category = CategorySerializer()
-    sizes = serializers.ListField(source="value")
-    colors = serializers.ListField(source="value")
-    image1 = serializers.CharField()
-    image2 = serializers.CharField()
-    image3 = serializers.CharField()
+    sizes = serializers.SerializerMethodField()
+    colors = serializers.SerializerMethodField()
+    reviews_count = serializers.IntegerField()
+    avg_rating = serializers.FloatField()
+    image1 = serializers.CharField(source="image1_url")
+    image2 = serializers.CharField(source="image2_url")
+    image3 = serializers.CharField(source="image3_url")
+
+    def get_sizes(self, obj: Product):
+        return [size.value for size in obj.sizes.all()]
+
+    def get_colors(self, obj: Product):
+        return [color.value for color in obj.colors.all()]
+
+
+class ProductsResponseDataSerializer(PaginatedResponseDataSerializer):
+    products = ProductSerializer(many=True, source="items")
+
+
+class ReviewSerializer(serializers.Serializer):
+    user = UserSerializer()
+    rating = serializers.ChoiceField(choices=RATING_CHOICES)
+    text = serializers.CharField()
+
+
+class ReviewResponseDataSerializer(PaginatedResponseDataSerializer):
+    items = ReviewSerializer(many=True)
+
+
+class ProductDetailSerializer(ProductSerializer):
+    related_products = ProductSerializer(many=True)
+    reviews = ReviewResponseDataSerializer(source="reviews_data")

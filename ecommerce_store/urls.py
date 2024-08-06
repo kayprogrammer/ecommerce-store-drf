@@ -14,6 +14,7 @@ from adrf.views import APIView
 from apps.common.responses import CustomResponse
 from apps.common.serializers import SuccessResponseSerializer
 from rest_framework.response import Response
+from debug_toolbar.toolbar import debug_toolbar_urls
 
 
 class HealthCheckView(APIView):
@@ -119,3 +120,7 @@ urlpatterns = [
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+if settings.DEBUG:
+    urlpatterns = [
+        *urlpatterns,
+    ] + debug_toolbar_urls()

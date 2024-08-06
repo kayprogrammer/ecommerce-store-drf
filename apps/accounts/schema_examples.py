@@ -1,20 +1,22 @@
-from http.client import UNAUTHORIZED
 from drf_spectacular.utils import OpenApiResponse, OpenApiExample
 from apps.common.exceptions import ErrorCode
+from apps.common.schema_examples import (
+    ERR_RESPONSE_STATUS,
+    RESPONSE_TYPE,
+    SUCCESS_RESPONSE_STATUS,
+)
 
-err_response_status = "failure"
-response_type = {"application/json"}
 TOKEN_EXAMPLE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
 AUTH_RESPONSE = {
     201: OpenApiResponse(
-        response=response_type,
+        response=RESPONSE_TYPE,
         description="Tokens Generated.",
         examples=[
             OpenApiExample(
                 name="Success Response",
                 value={
-                    "status": "success",
+                    "status": SUCCESS_RESPONSE_STATUS,
                     "message": "Tokens Generation successful",
                     "data": {
                         "access": TOKEN_EXAMPLE,
@@ -25,13 +27,13 @@ AUTH_RESPONSE = {
         ],
     ),
     401: OpenApiResponse(
-        response=response_type,
+        response=RESPONSE_TYPE,
         description="Invalid Auth Token or Invalid Client ID",
         examples=[
             OpenApiExample(
                 name="Invalid Auth Token",
                 value={
-                    "status": err_response_status,
+                    "status": ERR_RESPONSE_STATUS,
                     "code": ErrorCode.INVALID_TOKEN,
                     "message": "Invalid Auth Token",
                 },
@@ -39,7 +41,7 @@ AUTH_RESPONSE = {
             OpenApiExample(
                 name="Invalid Client ID",
                 value={
-                    "status": err_response_status,
+                    "status": ERR_RESPONSE_STATUS,
                     "code": ErrorCode.INVALID_CLIENT_ID,
                     "message": "Invalid Client ID",
                 },
@@ -51,13 +53,13 @@ AUTH_RESPONSE = {
 
 AUTH_REFRESH_RESPONSE = {
     201: OpenApiResponse(
-        response=response_type,
+        response=RESPONSE_TYPE,
         description="Tokens Generated.",
         examples=[
             OpenApiExample(
                 name="Success Response",
                 value={
-                    "status": "success",
+                    "status": SUCCESS_RESPONSE_STATUS,
                     "message": "Tokens Refresh successful",
                     "data": {
                         "access": TOKEN_EXAMPLE,
@@ -68,13 +70,13 @@ AUTH_REFRESH_RESPONSE = {
         ],
     ),
     401: OpenApiResponse(
-        response=response_type,
+        response=RESPONSE_TYPE,
         description="Invalid Refresh Token",
         examples=[
             OpenApiExample(
                 name="Invalid Refresh Token",
                 value={
-                    "status": err_response_status,
+                    "status": ERR_RESPONSE_STATUS,
                     "code": ErrorCode.INVALID_TOKEN,
                     "message": "Refresh token is invalid or expired",
                 },
@@ -84,13 +86,13 @@ AUTH_REFRESH_RESPONSE = {
 }
 
 UNAUTHORIZED_USER_RESPONSE = OpenApiResponse(
-    response=response_type,
+    response=RESPONSE_TYPE,
     description="Unauthorized User or Invalid Access Token",
     examples=[
         OpenApiExample(
             name="Unauthorized User",
             value={
-                "status": err_response_status,
+                "status": ERR_RESPONSE_STATUS,
                 "code": ErrorCode.INVALID_AUTH,
                 "message": "Auth Bearer not provided!",
             },
@@ -98,7 +100,7 @@ UNAUTHORIZED_USER_RESPONSE = OpenApiResponse(
         OpenApiExample(
             name="Invalid Access Token",
             value={
-                "status": err_response_status,
+                "status": ERR_RESPONSE_STATUS,
                 "code": ErrorCode.INVALID_TOKEN,
                 "message": "Access Token is Invalid or Expired!",
             },
@@ -108,13 +110,13 @@ UNAUTHORIZED_USER_RESPONSE = OpenApiResponse(
 
 AUTH_LOGOUT_RESPONSE = {
     200: OpenApiResponse(
-        response=response_type,
+        response=RESPONSE_TYPE,
         description="Logout Successful.",
         examples=[
             OpenApiExample(
                 name="Success Response",
                 value={
-                    "status": "success",
+                    "status": SUCCESS_RESPONSE_STATUS,
                     "message": "Logout Successful",
                 },
             )

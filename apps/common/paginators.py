@@ -15,7 +15,10 @@ class CustomPagination(PageNumberPagination):
         "page_size"  # Optional: allow clients to override the page size
     )
 
-    def paginate_queryset(self, queryset, request, view=None):
+    def paginate_queryset(self, queryset, request):
+        per_page = request.GET.get("per_page", 100)
+        current_page = request.GET.get("current_page", 1)
+
         """
         Paginate a queryset if required, either returning a page object,
         or `None` if pagination is not configured for this view.
@@ -29,15 +32,10 @@ class CustomPagination(PageNumberPagination):
             dict: A dictionary containing pagination details and the items on the current page,
             or `None` if pagination is not configured.
         """
-        page_size = self.get_page_size(request)
-        if not page_size:
-            return None
 
-        paginator = self.django_paginator_class(queryset, page_size)
-        page_number = self.get_page_number(request, paginator)
-
+        paginator = self.django_paginator_class(queryset, per_page)
         try:
-            self.page = paginator.page(page_number)
+            self.page = paginator.page(current_page)
         except InvalidPage:
             raise RequestError(
                 err_code=ErrorCode.INVALID_PAGE, err_msg="Invalid Page", status_code=404
@@ -46,7 +44,7 @@ class CustomPagination(PageNumberPagination):
         self.request = request
         return {
             "items": list(self.page),
-            "per_page": page_size,
-            "current_page": page_number,
+            "per_page": per_page,
+            "current_page": current_page,
             "last_page": paginator.num_pages,
         }
