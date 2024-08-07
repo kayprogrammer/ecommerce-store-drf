@@ -4,7 +4,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from autoslug import AutoSlugField
 from django.conf import settings
 from apps.accounts.models import GuestUser, User
-from apps.common.models import BaseModel, generate_unique_code
+from apps.common.models import BaseModel, IsDeletedModel, generate_unique_code
 from apps.shop.choices import (
     DELIVERY_STATUS_CHOICES,
     PAYMENT_GATEWAY_CHOICES,
@@ -77,7 +77,7 @@ class Category(BaseModel):
         verbose_name_plural = "Categories"
 
 
-class Product(BaseModel):
+class Product(IsDeletedModel):
     """
     Represents a product listed for sale.
 
@@ -160,6 +160,9 @@ class Product(BaseModel):
         # I have ideas but too tired to implement 🙂.
         # Show me you're a real dev by working on that yourself. 😀
         return self.colors.first()
+
+    def __str__(self):
+        return str(self.name)
 
 
 class Wishlist(BaseModel):
@@ -288,7 +291,7 @@ class Coupon(BaseModel):
         super().save(*args, **kwargs)
 
 
-class Order(BaseModel):
+class Order(IsDeletedModel):
     """
     Represents a customer's order.
 

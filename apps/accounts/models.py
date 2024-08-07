@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from apps.common.models import BaseModel
+from apps.common.models import BaseModel, IsDeletedModel
 from .managers import CustomUserManager
 
 ACCOUNT_TYPE_CHOICES = (
@@ -11,7 +11,7 @@ ACCOUNT_TYPE_CHOICES = (
 )
 
 
-class User(AbstractBaseUser, BaseModel, PermissionsMixin):
+class User(AbstractBaseUser, IsDeletedModel, PermissionsMixin):
     """
     Custom user model extending AbstractBaseUser, BaseModel, and PermissionsMixin.
 

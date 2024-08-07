@@ -46,9 +46,11 @@ class ProductsResponseDataSerializer(PaginatedResponseDataSerializer):
 
 
 class ReviewSerializer(serializers.Serializer):
-    user = UserSerializer()
+    user = UserSerializer(read_only=True)
     rating = serializers.ChoiceField(choices=RATING_CHOICES)
     text = serializers.CharField()
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
 
 
 class ReviewResponseDataSerializer(PaginatedResponseDataSerializer):

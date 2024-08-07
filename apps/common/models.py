@@ -1,8 +1,8 @@
 import secrets
-from typing import Any
 import uuid
 from django.db import models
-from .managers import GetOrNoneManager
+from .managers import GetOrNoneManager, IsDeletedManager
+from django.utils import timezone
 
 
 class BaseModel(models.Model):
@@ -20,7 +20,6 @@ class BaseModel(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    is_deleted = models.BooleanField(default=False)
 
     objects = GetOrNoneManager()
 
@@ -43,9 +42,24 @@ class BaseModel(models.Model):
                 url = None
         return url
 
+
+class IsDeletedModel(BaseModel):
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    objects = IsDeletedManager()
+
     def delete(self, *args, **kwargs):
+        # Soft delete by setting is_deleted=True
         self.is_deleted = True
-        self.save()
+        self.deleted_at = timezone.now()
+        self.save(update_fields=["is_deleted", "deleted_at"])
+
+    def hard_delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
 
 
 def generate_unique_code(model: BaseModel, field: str) -> str:

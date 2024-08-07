@@ -1,7 +1,7 @@
-def colour_size_filter_products(products_original, sizes, colours):
+def color_size_filter_products(products_original, sizes, colors):
     products = products_original
     sized_products = None
-    coloured_products = None
+    colored_products = None
 
     if len(sizes) > 0:
         sized_products = products_original.exclude(sizes=None)
@@ -9,12 +9,12 @@ def colour_size_filter_products(products_original, sizes, colours):
             sized_products = products_original.filter(sizes__value__in=sizes)
         products = sized_products
 
-    if len(colours) > 0:
-        coloured_products = products_original.exclude(colours=None)
-        if not "ALL" in colours:
-            coloured_products = products_original.filter(colours__value__in=colours)
-        products = coloured_products
+    if len(colors) > 0:
+        colored_products = products_original.exclude(colors=None)
+        if not "ALL" in colors:
+            colored_products = products_original.filter(colors__value__in=colors)
+        products = colored_products
 
-    if sized_products and coloured_products:
-        products = sized_products | coloured_products
+    if sized_products and colored_products:
+        products = sized_products | colored_products
     return products.distinct()

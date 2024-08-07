@@ -4,6 +4,8 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+
+from apps.common.admin import BaseModelAdmin
 from .forms import CustomAdminUserChangeForm, CustomAdminUserCreationForm
 from .models import User
 
@@ -32,7 +34,7 @@ class GroupAdmin(BaseGroupAdmin):
     pass
 
 
-class UserAdmin(BaseUserAdmin):
+class UserAdmin(BaseModelAdmin, BaseUserAdmin):
     """
     The admin interface for the User model.
 
@@ -93,6 +95,7 @@ class UserAdmin(BaseUserAdmin):
             {
                 "fields": (
                     "is_active",
+                    "is_deleted",
                     "is_staff",
                     "is_superuser",
                     "groups",
@@ -102,7 +105,7 @@ class UserAdmin(BaseUserAdmin):
         ),
         (
             _("Important Dates"),
-            {"fields": ("last_login",)},
+            {"fields": ("last_login", "deleted_at")},
         ),
     )
 

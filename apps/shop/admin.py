@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+from apps.common.admin import BaseModelAdmin
+
 from .models import (
     Category,
     Color,
@@ -14,17 +16,17 @@ from .models import (
 )
 
 
-class SizeAdmin(admin.ModelAdmin):
+class SizeAdmin(BaseModelAdmin):
     list_display = ("value", "created_at", "updated_at")
     list_filter = list_display
 
 
-class CategoryAdmin(admin.ModelAdmin):
+class CategoryAdmin(BaseModelAdmin):
     list_display = ("name", "created_at", "updated_at")
     list_filter = list_display
 
 
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(BaseModelAdmin):
     list_display = (
         "seller",
         "name",
@@ -38,23 +40,23 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = list_display
 
 
-class CountryAdmin(admin.ModelAdmin):
+class CountryAdmin(BaseModelAdmin):
     list_display = ("name", "code", "phone_code")
     list_filter = list_display
 
 
-class ShippingAddressAdmin(admin.ModelAdmin):
+class ShippingAddressAdmin(BaseModelAdmin):
     list_display = ("user", "full_name", "email")
     list_filter = list_display + ("state", "country")
 
 
-class CouponAdmin(admin.ModelAdmin):
+class CouponAdmin(BaseModelAdmin):
     list_display = ("code", "percentage_off", "expiry_date")
     list_filter = list_display
     readonly_fields = ("code", "created_at")
 
 
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(BaseModelAdmin):
     readonly_fields = ("tx_ref",)
     list_display = (
         "user",
@@ -67,12 +69,12 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = list_display
 
 
-class OrderItemAdmin(admin.ModelAdmin):
+class OrderItemAdmin(BaseModelAdmin):
     list_display = ("user", "guest", "product", "quantity", "created_at")
     list_filter = list_display
 
 
-class ReviewAdmin(admin.ModelAdmin):
+class ReviewAdmin(BaseModelAdmin):
     list_display = ("user", "product", "rating", "created_at", "updated_at")
     list_filter = list_display
 

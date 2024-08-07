@@ -1,4 +1,5 @@
 from drf_spectacular.utils import OpenApiResponse, OpenApiExample
+from apps.accounts.schema_examples import UNAUTHORIZED_USER_RESPONSE
 from apps.common.exceptions import ErrorCode
 from apps.common.schema_examples import (
     ERR_RESPONSE_STATUS,
@@ -76,6 +77,21 @@ REVIEW_EXAMPLE = {
     "text": "This product is one of a king. I highly recommend you buy it",
 }
 
+PRODUCT_NON_EXISTENT_RESPONSE = OpenApiResponse(
+    response=RESPONSE_TYPE,
+    description="Product Details Fetched",
+    examples=[
+        OpenApiExample(
+            name="Non-existent Response",
+            value={
+                "status": ERR_RESPONSE_STATUS,
+                "code": ErrorCode.NON_EXISTENT,
+                "message": "Product does not exist!",
+            },
+        )
+    ],
+)
+
 PRODUCT_RESPONSE = {
     200: OpenApiResponse(
         response=RESPONSE_TYPE,
@@ -96,18 +112,38 @@ PRODUCT_RESPONSE = {
             )
         ],
     ),
-    404: OpenApiResponse(
+    404: PRODUCT_NON_EXISTENT_RESPONSE,
+}
+
+REVIEW_RESPONSE_EXAMPLE = {
+    201: OpenApiResponse(
         response=RESPONSE_TYPE,
-        description="Product Details Fetched",
+        description="Review created",
         examples=[
             OpenApiExample(
-                name="Non-existent Response",
+                name="Success Response",
                 value={
-                    "status": ERR_RESPONSE_STATUS,
-                    "code": ErrorCode.NON_EXISTENT,
-                    "message": "Product does not exist!",
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Review Created Successfully",
+                    "data": REVIEW_EXAMPLE,
                 },
             )
         ],
     ),
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Review updated",
+        examples=[
+            OpenApiExample(
+                name="Success Response",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Review Updated Successfully",
+                    "data": REVIEW_EXAMPLE,
+                },
+            )
+        ],
+    ),
+    404: PRODUCT_NON_EXISTENT_RESPONSE,
+    401: UNAUTHORIZED_USER_RESPONSE,
 }

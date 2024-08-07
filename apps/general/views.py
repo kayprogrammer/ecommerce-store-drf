@@ -72,7 +72,9 @@ class SubscribeView(APIView):
 
     @extend_schema(
         summary="Subscribe to newsletter",
-        description="This endpoint adds an email to our newsletter.",
+        description="""
+            This endpoint adds an email to our newsletter.
+        """,
         tags=tags,
         responses=SuccessResponseSerializer,
     )

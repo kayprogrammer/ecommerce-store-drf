@@ -3,10 +3,12 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from import_export import resources
 from import_export.admin import ExportActionMixin
+
+from apps.common.admin import BaseModelAdmin
 from .models import Message, SiteDetail, Subscriber
 
 
-class SiteDetailAdmin(admin.ModelAdmin):
+class SiteDetailAdmin(BaseModelAdmin):
     """
     Admin interface customization for the SiteDetail model.
 
@@ -87,7 +89,7 @@ class SubscriberResource(resources.ModelResource):
         fields = ("email",)
 
 
-class SubscriberAdmin(ExportActionMixin, admin.ModelAdmin):
+class SubscriberAdmin(ExportActionMixin, BaseModelAdmin):
     """
     Admin interface for managing `Subscriber` model instances.
 
@@ -123,7 +125,7 @@ class SubscriberAdmin(ExportActionMixin, admin.ModelAdmin):
         return response
 
 
-class MessageAdmin(admin.ModelAdmin):
+class MessageAdmin(BaseModelAdmin):
     """
     Admin interface for managing `Message` model instances.
 
