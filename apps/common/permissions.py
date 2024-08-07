@@ -43,7 +43,6 @@ class IsAuthenticatedOrGuestCustom(BasePermission):
             if not guest:
                 guest = GuestUser.objects.create()
             request.user = guest
-            request.guest_id = guest.id
         return True
 
 

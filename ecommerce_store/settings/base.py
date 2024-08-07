@@ -22,6 +22,10 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 50,
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_RENDERER_CLASSES": (
+        "apps.common.renderers.GuestIDRenderer",
+        "rest_framework.renderers.JSONRenderer",
+    ),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
@@ -93,7 +97,7 @@ SPECTACULAR_SETTINGS = {
                 "scheme": "bearer",
                 "bearerFormat": "JWT",
             },
-            "guestUserID": {
+            "Guest-User-ID": {
                 "type": "apiKey",
                 "in": "header",
                 "name": "Guest-User-ID",
@@ -126,7 +130,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "apps.common.middlewares.GuestIDMiddleware",
 ]
 
 ROOT_URLCONF = "ecommerce_store.urls"

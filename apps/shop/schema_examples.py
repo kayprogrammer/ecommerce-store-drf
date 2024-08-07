@@ -11,6 +11,7 @@ from apps.common.schema_examples import (
     PAGINATED_RESPONSE_EXAMPLE,
     RESPONSE_TYPE,
     SUCCESS_RESPONSE_STATUS,
+    UUID_EXAMPLE,
     page_parameter_example,
 )
 
@@ -44,7 +45,7 @@ PRODUCT_EXAMPLE = {
 PRODUCTS_RESPONSE = {
     200: OpenApiResponse(
         response=RESPONSE_TYPE,
-        description="Products Fetched",
+        description="Products Fetched. guest_id will only show for guest users",
         examples=[
             OpenApiExample(
                 name="Success Response",
@@ -85,7 +86,7 @@ REVIEW_EXAMPLE = {
 
 PRODUCT_NON_EXISTENT_RESPONSE = OpenApiResponse(
     response=RESPONSE_TYPE,
-    description="Product Details Fetched",
+    description="Product Does Not Exist",
     examples=[
         OpenApiExample(
             name="Non-existent Response",
@@ -178,3 +179,35 @@ PRODUCTS_PARAM_EXAMPLE = [
     ),
     *page_parameter_example("products", 100),
 ]
+
+WISHLIST_RESPONSE_EXAMPLE = {
+    201: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Product Added To Wishlist. guest_id will only show if you're a guest",
+        examples=[
+            OpenApiExample(
+                name="Success Response",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Product Added To Wishlist Successfully",
+                    "guest_id": UUID_EXAMPLE,  # Optional
+                },
+            )
+        ],
+    ),
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Product Removed From Wishlist. guest_id will only show if you're a guest",
+        examples=[
+            OpenApiExample(
+                name="Success Response",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Product Removed From Wishlist Successfully",
+                    "guest_id": UUID_EXAMPLE,  # Optional
+                },
+            )
+        ],
+    ),
+    404: PRODUCT_NON_EXISTENT_RESPONSE,
+}

@@ -6,14 +6,15 @@ from apps.common.paginators import CustomPagination
 from apps.common.permissions import IsAuthenticatedCustom, IsAuthenticatedOrGuestCustom
 from apps.common.responses import CustomResponse
 from apps.common.schema_examples import page_parameter_example
-from apps.common.utils import REVIEWS_AND_RATING_ANNOTATION
-from apps.shop.models import Category, Product, Review
+from apps.common.utils import REVIEWS_AND_RATING_ANNOTATION, get_user_or_guest
+from apps.shop.models import Category, Product, Review, Wishlist
 from apps.shop.schema_examples import (
     CATEGORIES_RESPONSE,
     PRODUCT_RESPONSE,
     PRODUCTS_PARAM_EXAMPLE,
     PRODUCTS_RESPONSE,
     REVIEW_RESPONSE_EXAMPLE,
+    WISHLIST_RESPONSE_EXAMPLE,
 )
 from apps.shop.serializers import (
     CategorySerializer,
@@ -234,12 +235,12 @@ class WishlistView(APIView):
     API view to fetch all products in a wishlist.
 
     Methods:
-        get: Asynchronously fetches and returns all products, with optional filtering by name, size, or color.
+        get: Asynchronously fetches and returns all products in user's or guest wishlist, with optional filtering by name, size, or color.
     """
 
     serializer_class = ProductsResponseDataSerializer
     paginator_class = CustomPagination()
-    permission_classes = [IsAuthenticatedOrGuestCustom()]
+    permission_classes = [IsAuthenticatedOrGuestCustom]
 
     @extend_schema(
         summary="Wishlist Products Fetch",
@@ -252,12 +253,55 @@ class WishlistView(APIView):
         parameters=PRODUCTS_PARAM_EXAMPLE,
     )
     async def get(self, request):
-        user = request.user
+        user, guest = get_user_or_guest(request.user)
         products = await fetch_products(
-            request, {Q(wishlist__user=user) | Q(wishlist__guest=user)}
+            request, {"wishlist__user": user, "wishlist__guest": guest}
         )
         paginated_data = self.paginator_class.paginate_queryset(products, request)
         serializer = self.serializer_class(paginated_data)
         return CustomResponse.success(
             message="Wishlist Products Fetched Successfully", data=serializer.data
+        )
+
+
+class ToggleWishlistView(APIView):
+    """
+    API view to toggle product to and from wishlist.
+
+    Methods:
+        get: Asynchronously adds or remove a product from a user or guest wishlist.
+    """
+
+    permission_classes = [IsAuthenticatedOrGuestCustom]
+
+    @extend_schema(
+        summary="Toggle Wishlist",
+        description="""
+            This endpoint allows users or guests to add or remove product from their wishlist. 
+            For user, use the jwt bearer auth, and for a guest, use the provided guest_id.
+        """,
+        tags=tags,
+        responses=WISHLIST_RESPONSE_EXAMPLE,
+    )
+    async def get(self, request, *args, **kwargs):
+        user, guest = get_user_or_guest(request.user)
+        product = await Product.objects.aget_or_none(slug=kwargs["slug"])
+        if not product:
+            raise RequestError(
+                err_msg="Product does not exist!",
+                err_code=ErrorCode.NON_EXISTENT,
+                status_code=404,
+            )
+        wishlist, created = await Wishlist.objects.aget_or_create(
+            user=user, guest=guest, product=product
+        )
+        response_message_substring = "Added To"
+        status_code = 201
+        if not created:
+            status_code = 200
+            response_message_substring = "Removed From"
+            await wishlist.adelete()
+        return CustomResponse.success(
+            message=f"Product {response_message_substring} Wishlist Successfully",
+            status_code=status_code,
         )
