@@ -1,4 +1,4 @@
-from django.db.models import Avg, Value, FloatField, Count, OuterRef, Subquery, Exists
+from django.db.models import Avg, Value, FloatField, Count, OuterRef, Exists
 from django.db.models.functions import Coalesce
 
 from apps.accounts.models import GuestUser

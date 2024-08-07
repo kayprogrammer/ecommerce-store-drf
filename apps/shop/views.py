@@ -1,6 +1,7 @@
 from adrf.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
-from apps.common.exceptions import ErrorCode, RequestError
+from apps.common.decorators import aatomic
+from apps.common.exceptions import ErrorCode, RequestError, ValidationError
 from apps.common.paginators import CustomPagination
 from apps.common.permissions import IsAuthenticatedCustom, IsAuthenticatedOrGuestCustom
 from apps.common.responses import CustomResponse
@@ -9,9 +10,11 @@ from apps.common.utils import (
     REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION,
     get_user_or_guest,
 )
-from apps.shop.models import Category, Product, Review, Wishlist
+from apps.shop.models import Category, OrderItem, Product, Review, Wishlist
 from apps.shop.schema_examples import (
+    CART_RESPONSE_EXAMPLE,
     CATEGORIES_RESPONSE,
+    ORDERITEM_RESPONSE_EXAMPLE,
     PRODUCT_RESPONSE,
     PRODUCTS_BY_CATEGORY_RESPONSE_EXAMPLE,
     PRODUCTS_PARAM_EXAMPLE,
@@ -21,9 +24,12 @@ from apps.shop.schema_examples import (
 )
 from apps.shop.serializers import (
     CategorySerializer,
+    OrderItemSerializer,
+    OrderItemsResponseDataSerializer,
     ProductDetailSerializer,
     ProductsResponseDataSerializer,
     ReviewSerializer,
+    ToggleCartItemSerializer,
 )
 from apps.shop.utils import fetch_products
 from asgiref.sync import sync_to_async
@@ -350,4 +356,108 @@ class ProductsByCategoryView(APIView):
         serializer = self.serializer_class(paginated_data)
         return CustomResponse.success(
             message="Products Fetched Successfully", data=serializer.data
+        )
+
+
+class CartView(APIView):
+    """
+    API view to fetch all items in a user or guest cart.
+
+    Methods:
+        get: Asynchronously fetches and returns all items in a user or guest's cart.
+    """
+
+    serializer_class = OrderItemsResponseDataSerializer
+    item_serializer_class = OrderItemSerializer
+    serializer_create_class = ToggleCartItemSerializer
+    paginator_class = CustomPagination()
+    permission_classes = [IsAuthenticatedOrGuestCustom]
+
+    @extend_schema(
+        summary="Cart Items Fetch",
+        description="""
+            This endpoint returns all items in a user or guest's cart.
+        """,
+        tags=tags,
+        responses=CART_RESPONSE_EXAMPLE,
+        parameters=page_parameter_example("cart_items", 100),
+    )
+    async def get(self, request, *args, **kwargs):
+        user, guest = get_user_or_guest(request.user)
+        orderitems = await sync_to_async(list)(
+            OrderItem.objects.filter(user=user, guest=guest, order=None).select_related(
+                "product", "size", "color"
+            )
+        )
+        paginated_data = self.paginator_class.paginate_queryset(orderitems, request)
+        serializer = self.serializer_class(paginated_data)
+        return CustomResponse.success(
+            message="Cart Items Returned", data=serializer.data
+        )
+
+    @extend_schema(
+        summary="Toggle Item in cart",
+        description="""
+            This endpoint allows a user or guest to add/update/remove an item in cart.
+            If quantity is 0, the item is removed from cart
+        """,
+        tags=tags,
+        request=serializer_create_class,
+        responses=ORDERITEM_RESPONSE_EXAMPLE,
+    )
+    @aatomic
+    async def post(self, request, *args, **kwargs):
+        user, guest = get_user_or_guest(request.user)
+        serializer = self.serializer_create_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        quantity = data["quantity"]
+        size = data.get("size")
+        color = data.get("color")
+
+        product = await Product.objects.select_related("seller").aget_or_none(
+            slug=data["slug"]
+        )
+        if not product:
+            raise ValidationError("slug", "No Product with that slug")
+        if size:
+            size = await product.sizes.aget_or_none(value=size)
+            if not size:
+                raise ValidationError("size", "Invalid size selected")
+
+        if color:
+            color = await product.colors.aget_or_none(value=color)
+            if not color:
+                raise ValidationError("color", "Invalid color selected")
+
+        orderitem, created = await OrderItem.objects.select_related(
+            "size", "color"
+        ).aupdate_or_create(
+            user=user,
+            guest=guest,
+            order_id=None,
+            product=product,
+            size=size,
+            color=color,
+            defaults={"quantity": quantity},
+        )
+        print("Haaalala")
+        resp_message_substring = "Updated In"
+        status_code = 200
+        if created:
+            status_code = 201
+            resp_message_substring = "Added To"
+        if orderitem.quantity == 0:
+            resp_message_substring = "Removed From"
+            # Delete item from cart
+            await orderitem.adelete()
+        data = None
+        if resp_message_substring != "Removed From":
+            orderitem.product = product
+            serializer = self.item_serializer_class(orderitem)
+            data = serializer.data
+        return CustomResponse.success(
+            message=f"Item {resp_message_substring} Cart",
+            data=data,
+            status_code=status_code,
         )

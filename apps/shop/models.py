@@ -446,6 +446,9 @@ class OrderItem(BaseModel):
 
     def save(self, *args, **kwargs):
         if self._state.adding:
+            if self.quantity == 0:
+                # Ensure to make it one just incase it's creating and the user sets 0
+                self.quantity = 1
             if not self.color:
                 self.color = self.product.default_color
             if not self.size:

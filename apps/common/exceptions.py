@@ -68,6 +68,19 @@ class RequestError(APIException):
         super().__init__()
 
 
+class ValidationError(RequestError):
+    def __init__(
+        self,
+        field: str,
+        message: str,
+        err_msg: str = "Invalid Entry",
+        err_code: str = ErrorCode.INVALID_ENTRY,
+        status_code: int = 422,
+    ) -> None:
+        data = {field: message}
+        super().__init__(err_msg, err_code, status_code, data)
+
+
 def custom_exception_handler(exc, context):
     """
     A custom exception handler to handle various types of exceptions.

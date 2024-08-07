@@ -41,6 +41,7 @@ PRODUCT_EXAMPLE = {
     "image2": "https://img.com/product/image2",
     "image3": "https://img.com/product/image3",
 }
+
 PRODUCTS_RESPONSE = {
     200: OpenApiResponse(
         response=RESPONSE_TYPE,
@@ -205,5 +206,76 @@ CATEGORY_NON_EXISTENT_RESPONSE = non_existent_response_example("Category")
 
 PRODUCTS_BY_CATEGORY_RESPONSE_EXAMPLE = PRODUCTS_RESPONSE | {
     404: CATEGORY_NON_EXISTENT_RESPONSE,
+    401: UNAUTHORIZED_USER_RESPONSE,
+}
+
+ORDERITEM_DATA_EXAMPLE = {
+    "product": {
+        "seller": USER_EXAMPLE,
+        "name": "Whatever product",
+        "slug": "whatever-product",
+        "price": "10000.50",
+    },
+    "quantity": 5,
+    "size": "L",
+    "color": "Black",
+    "total": 3,
+}
+
+CART_RESPONSE_EXAMPLE = {
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Cart Returned",
+        examples=[
+            OpenApiExample(
+                name="Success Response",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Cart Items Returned",
+                    "data": PAGINATED_RESPONSE_EXAMPLE
+                    | {"items": ORDERITEM_DATA_EXAMPLE},
+                },
+            )
+        ],
+    ),
+    401: UNAUTHORIZED_USER_RESPONSE,
+}
+
+ORDERITEM_RESPONSE_EXAMPLE = {
+    201: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Item Added",
+        examples=[
+            OpenApiExample(
+                name="Item Added",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Item Added To Cart",
+                    "data": ORDERITEM_DATA_EXAMPLE,
+                },
+            ),
+        ],
+    ),
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Item Updated/Removed",
+        examples=[
+            OpenApiExample(
+                name="Item Updated",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Item Updated In Cart",
+                    "data": ORDERITEM_DATA_EXAMPLE,
+                },
+            ),
+            OpenApiExample(
+                name="Item Removed",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Item Removed From Cart",
+                },
+            ),
+        ],
+    ),
     401: UNAUTHORIZED_USER_RESPONSE,
 }

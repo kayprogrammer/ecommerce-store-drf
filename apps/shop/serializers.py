@@ -61,3 +61,31 @@ class ReviewResponseDataSerializer(PaginatedResponseDataSerializer):
 class ProductDetailSerializer(ProductSerializer):
     related_products = ProductSerializer(many=True)
     reviews = ReviewResponseDataSerializer(source="reviews_data")
+
+
+class OrderItemProductSerializer(serializers.Serializer):
+    seller = UserSerializer()
+    name = serializers.CharField()
+    slug = serializers.SlugField()
+    price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, source="price_current"
+    )
+
+
+class OrderItemSerializer(serializers.Serializer):
+    product = OrderItemProductSerializer()
+    quantity = serializers.IntegerField()
+    size = serializers.CharField(source="size.value")
+    color = serializers.CharField(source="color.value")
+    total = serializers.FloatField(source="get_total")
+
+
+class OrderItemsResponseDataSerializer(PaginatedResponseDataSerializer):
+    items = OrderItemSerializer(many=True)
+
+
+class ToggleCartItemSerializer(serializers.Serializer):
+    slug = serializers.SlugField()
+    quantity = serializers.IntegerField(min_value=0)
+    size = serializers.CharField(required=False)
+    color = serializers.CharField(required=False)

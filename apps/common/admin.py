@@ -11,7 +11,10 @@ admin.site.site_header = mark_safe(
 
 class BaseModelAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
-        return self.model.objects.unfiltered()
+        model_object_manager = self.model.objects
+        if hasattr(model_object_manager, "unfiltered"):
+            return model_object_manager.unfiltered()
+        return super().get_queryset(request)
 
     def delete_model(self, request: HttpRequest, obj: Any) -> None:
         obj.hard_delete()
