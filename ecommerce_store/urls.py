@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.http import JsonResponse
-from django.shortcuts import render
 from django.urls import include, path
 from django.conf.urls.static import static
 from django.conf import settings

@@ -1,4 +1,3 @@
-from django.db.models import Q
 from adrf.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from apps.common.exceptions import ErrorCode, RequestError
@@ -6,11 +5,15 @@ from apps.common.paginators import CustomPagination
 from apps.common.permissions import IsAuthenticatedCustom, IsAuthenticatedOrGuestCustom
 from apps.common.responses import CustomResponse
 from apps.common.schema_examples import page_parameter_example
-from apps.common.utils import REVIEWS_AND_RATING_ANNOTATION, get_user_or_guest
+from apps.common.utils import (
+    REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION,
+    get_user_or_guest,
+)
 from apps.shop.models import Category, Product, Review, Wishlist
 from apps.shop.schema_examples import (
     CATEGORIES_RESPONSE,
     PRODUCT_RESPONSE,
+    PRODUCTS_BY_CATEGORY_RESPONSE_EXAMPLE,
     PRODUCTS_PARAM_EXAMPLE,
     PRODUCTS_RESPONSE,
     REVIEW_RESPONSE_EXAMPLE,
@@ -71,6 +74,7 @@ class ProductsView(APIView):
         get: Asynchronously fetches and returns all products, with optional filtering by name, size, or color.
     """
 
+    permission_classes = [IsAuthenticatedOrGuestCustom]
     serializer_class = ProductsResponseDataSerializer
     paginator_class = CustomPagination()
 
@@ -94,7 +98,8 @@ class ProductsView(APIView):
         Returns:
             CustomResponse: A response containing serialized and paginated product data.
         """
-        products = await fetch_products(request)
+        user, guest = get_user_or_guest(request.user)
+        products = await fetch_products(request, user, guest)
 
         paginated_data = self.paginator_class.paginate_queryset(products, request)
         serializer = self.serializer_class(paginated_data)
@@ -113,6 +118,7 @@ class ProductView(APIView):
         get_permissions: Returns custom permissions for POST requests.
     """
 
+    permission_classes = [IsAuthenticatedOrGuestCustom]
     serializer_class = ProductDetailSerializer
     review_serializer_class = ReviewSerializer
     paginator_class = CustomPagination()
@@ -137,10 +143,11 @@ class ProductView(APIView):
         Returns:
             CustomResponse: A response containing serialized product details.
         """
+        user, guest = get_user_or_guest(request.user)
         product = await (
             Product.objects.select_related("category", "seller")
             .prefetch_related("sizes", "colors", "reviews", "reviews__user")
-            .annotate(**REVIEWS_AND_RATING_ANNOTATION)
+            .annotate(**REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION(user, guest))
             .aget_or_none(in_stock__gt=0, slug=kwargs["slug"])
         )
         if not product:
@@ -159,7 +166,7 @@ class ProductView(APIView):
         product.related_products = await sync_to_async(list)(
             Product.objects.select_related("category", "seller")
             .prefetch_related("sizes", "colors")
-            .annotate(**REVIEWS_AND_RATING_ANNOTATION)
+            .annotate(**REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION(user, guest))
             .filter(category_id=product.category_id, in_stock__gt=0)
             .exclude(id=product.id)[:10]
         )
@@ -227,7 +234,7 @@ class ProductView(APIView):
         """
         if self.request.method == "POST":
             return [IsAuthenticatedCustom()]
-        return []
+        return [IsAuthenticatedOrGuestCustom()]
 
 
 class WishlistView(APIView):
@@ -255,7 +262,7 @@ class WishlistView(APIView):
     async def get(self, request):
         user, guest = get_user_or_guest(request.user)
         products = await fetch_products(
-            request, {"wishlist__user": user, "wishlist__guest": guest}
+            request, user, guest, {"wishlist__user": user, "wishlist__guest": guest}
         )
         paginated_data = self.paginator_class.paginate_queryset(products, request)
         serializer = self.serializer_class(paginated_data)
@@ -304,4 +311,43 @@ class ToggleWishlistView(APIView):
         return CustomResponse.success(
             message=f"Product {response_message_substring} Wishlist Successfully",
             status_code=status_code,
+        )
+
+
+class ProductsByCategoryView(APIView):
+    """
+    API view to fetch all products in a particular category.
+
+    Methods:
+        get: Asynchronously fetches and returns all products in a particular category, with optional filtering by name, size, or color.
+    """
+
+    serializer_class = ProductsResponseDataSerializer
+    paginator_class = CustomPagination()
+    permission_classes = [IsAuthenticatedOrGuestCustom]
+
+    @extend_schema(
+        summary="Category Products Fetch",
+        description="""
+            This endpoint returns all products in a particular category.
+        """,
+        tags=tags,
+        responses=PRODUCTS_BY_CATEGORY_RESPONSE_EXAMPLE,
+        parameters=PRODUCTS_PARAM_EXAMPLE,
+    )
+    async def get(self, request, *args, **kwargs):
+        user, guest = get_user_or_guest(request.user)
+        category = await Category.objects.aget_or_none(slug=kwargs["slug"])
+        if not category:
+            raise RequestError(
+                err_msg="Category does not exist!",
+                err_code=ErrorCode.NON_EXISTENT,
+                status_code=404,
+            )
+
+        products = await fetch_products(request, user, guest, {"category": category})
+        paginated_data = self.paginator_class.paginate_queryset(products, request)
+        serializer = self.serializer_class(paginated_data)
+        return CustomResponse.success(
+            message="Products Fetched Successfully", data=serializer.data
         )

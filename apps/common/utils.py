@@ -1,12 +1,21 @@
-from django.db.models import Avg, Value, FloatField, Count
+from django.db.models import Avg, Value, FloatField, Count, OuterRef, Subquery, Exists
 from django.db.models.functions import Coalesce
 
 from apps.accounts.models import GuestUser
+from apps.shop.models import Wishlist
 
-REVIEWS_AND_RATING_ANNOTATION = {
-    "reviews_count": Count("reviews"),
-    "avg_rating": Coalesce(Avg("reviews__rating"), Value(0), output_field=FloatField()),
-}
+
+def REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION(user, guest):
+    wishlist_subquery = Wishlist.objects.filter(
+        product=OuterRef("pk"), user=user, guest=guest
+    )
+    return {
+        "reviews_count": Count("reviews"),
+        "avg_rating": Coalesce(
+            Avg("reviews__rating"), Value(0), output_field=FloatField()
+        ),
+        "wishlisted": Exists(wishlist_subquery),
+    }
 
 
 def get_user_or_guest(user):

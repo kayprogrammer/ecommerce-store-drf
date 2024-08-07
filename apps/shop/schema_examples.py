@@ -5,13 +5,12 @@ from drf_spectacular.utils import (
     OpenApiTypes,
 )
 from apps.accounts.schema_examples import UNAUTHORIZED_USER_RESPONSE
-from apps.common.exceptions import ErrorCode
 from apps.common.schema_examples import (
-    ERR_RESPONSE_STATUS,
     PAGINATED_RESPONSE_EXAMPLE,
     RESPONSE_TYPE,
     SUCCESS_RESPONSE_STATUS,
     UUID_EXAMPLE,
+    non_existent_response_example,
     page_parameter_example,
 )
 
@@ -57,7 +56,8 @@ PRODUCTS_RESPONSE = {
                 },
             )
         ],
-    )
+    ),
+    401: UNAUTHORIZED_USER_RESPONSE,
 }
 
 
@@ -84,20 +84,7 @@ REVIEW_EXAMPLE = {
     "text": "This product is one of a king. I highly recommend you buy it",
 }
 
-PRODUCT_NON_EXISTENT_RESPONSE = OpenApiResponse(
-    response=RESPONSE_TYPE,
-    description="Product Does Not Exist",
-    examples=[
-        OpenApiExample(
-            name="Non-existent Response",
-            value={
-                "status": ERR_RESPONSE_STATUS,
-                "code": ErrorCode.NON_EXISTENT,
-                "message": "Product does not exist!",
-            },
-        )
-    ],
-)
+PRODUCT_NON_EXISTENT_RESPONSE = non_existent_response_example("Product")
 
 PRODUCT_RESPONSE = {
     200: OpenApiResponse(
@@ -120,6 +107,7 @@ PRODUCT_RESPONSE = {
         ],
     ),
     404: PRODUCT_NON_EXISTENT_RESPONSE,
+    401: UNAUTHORIZED_USER_RESPONSE,
 }
 
 REVIEW_RESPONSE_EXAMPLE = {
@@ -210,4 +198,12 @@ WISHLIST_RESPONSE_EXAMPLE = {
         ],
     ),
     404: PRODUCT_NON_EXISTENT_RESPONSE,
+    401: UNAUTHORIZED_USER_RESPONSE,
+}
+
+CATEGORY_NON_EXISTENT_RESPONSE = non_existent_response_example("Category")
+
+PRODUCTS_BY_CATEGORY_RESPONSE_EXAMPLE = PRODUCTS_RESPONSE | {
+    404: CATEGORY_NON_EXISTENT_RESPONSE,
+    401: UNAUTHORIZED_USER_RESPONSE,
 }

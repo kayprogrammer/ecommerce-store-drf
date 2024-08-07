@@ -30,6 +30,7 @@ class ProductSerializer(serializers.Serializer):
     colors = serializers.SerializerMethodField()
     reviews_count = serializers.IntegerField()
     avg_rating = serializers.FloatField()
+    wishlisted = serializers.BooleanField()
     image1 = serializers.CharField(source="image1_url")
     image2 = serializers.CharField(source="image2_url")
     image3 = serializers.CharField(source="image3_url")

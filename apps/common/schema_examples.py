@@ -1,4 +1,6 @@
-from drf_spectacular.utils import OpenApiParameter
+from drf_spectacular.utils import OpenApiParameter, OpenApiExample, OpenApiResponse
+
+from apps.common.exceptions import ErrorCode
 
 RESPONSE_TYPE = {"application/json"}
 ERR_RESPONSE_STATUS = "failure"
@@ -24,3 +26,20 @@ def page_parameter_example(item, page_amount_default):
             type=int,
         ),
     ]
+
+
+def non_existent_response_example(object_type):
+    return OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description=f"{object_type} Does Not Exist",
+        examples=[
+            OpenApiExample(
+                name="Non-existent Response",
+                value={
+                    "status": ERR_RESPONSE_STATUS,
+                    "code": ErrorCode.NON_EXISTENT,
+                    "message": f"{object_type} does not exist!",
+                },
+            )
+        ],
+    )

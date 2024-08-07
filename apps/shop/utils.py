@@ -1,7 +1,7 @@
 from typing import Dict
 from apps.shop.models import Product
 from asgiref.sync import sync_to_async
-from apps.common.utils import REVIEWS_AND_RATING_ANNOTATION
+from apps.common.utils import REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION
 
 
 def color_size_filter_products(products_original, sizes, colors):
@@ -26,12 +26,12 @@ def color_size_filter_products(products_original, sizes, colors):
     return products.distinct()
 
 
-async def fetch_products(request, extra_filter: Dict = None):
+async def fetch_products(request, user, guest, extra_filter: Dict = None):
     name_filter = request.GET.get("name")
     products = (
         Product.objects.select_related("category", "seller")
         .prefetch_related("sizes", "colors")
-        .annotate(**REVIEWS_AND_RATING_ANNOTATION)
+        .annotate(**REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION(user, guest))
         .filter(in_stock__gt=0)
     )
     if name_filter:
