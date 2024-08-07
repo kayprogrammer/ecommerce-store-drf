@@ -1,4 +1,9 @@
-from drf_spectacular.utils import OpenApiResponse, OpenApiExample
+from drf_spectacular.utils import (
+    OpenApiResponse,
+    OpenApiExample,
+    OpenApiParameter,
+    OpenApiTypes,
+)
 from apps.accounts.schema_examples import UNAUTHORIZED_USER_RESPONSE
 from apps.common.exceptions import ErrorCode
 from apps.common.schema_examples import (
@@ -6,6 +11,7 @@ from apps.common.schema_examples import (
     PAGINATED_RESPONSE_EXAMPLE,
     RESPONSE_TYPE,
     SUCCESS_RESPONSE_STATUS,
+    page_parameter_example,
 )
 
 CATEGORY_EXAMPLE = {
@@ -147,3 +153,28 @@ REVIEW_RESPONSE_EXAMPLE = {
     404: PRODUCT_NON_EXISTENT_RESPONSE,
     401: UNAUTHORIZED_USER_RESPONSE,
 }
+
+
+PRODUCTS_PARAM_EXAMPLE = [
+    OpenApiParameter(
+        name="name",
+        description="Filter products by its name",
+        required=False,
+        type=OpenApiTypes.STR,
+    ),
+    OpenApiParameter(
+        name="size",
+        type=OpenApiTypes.STR,
+        description="Filter products by size. Can be specified multiple times to include multiple sizes.",
+        required=False,
+        explode=True,
+    ),
+    OpenApiParameter(
+        name="color",
+        type=OpenApiTypes.STR,
+        description="Filter products by color. Can be specified multiple times to include multiple colors.",
+        required=False,
+        explode=True,
+    ),
+    *page_parameter_example("products", 100),
+]

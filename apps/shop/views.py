@@ -1,8 +1,9 @@
+from django.db.models import Q
 from adrf.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from apps.common.exceptions import ErrorCode, RequestError
 from apps.common.paginators import CustomPagination
-from apps.common.permissions import IsAuthenticatedCustom
+from apps.common.permissions import IsAuthenticatedCustom, IsAuthenticatedOrGuestCustom
 from apps.common.responses import CustomResponse
 from apps.common.schema_examples import page_parameter_example
 from apps.common.utils import REVIEWS_AND_RATING_ANNOTATION
@@ -10,6 +11,7 @@ from apps.shop.models import Category, Product, Review
 from apps.shop.schema_examples import (
     CATEGORIES_RESPONSE,
     PRODUCT_RESPONSE,
+    PRODUCTS_PARAM_EXAMPLE,
     PRODUCTS_RESPONSE,
     REVIEW_RESPONSE_EXAMPLE,
 )
@@ -19,7 +21,7 @@ from apps.shop.serializers import (
     ProductsResponseDataSerializer,
     ReviewSerializer,
 )
-from apps.shop.utils import color_size_filter_products
+from apps.shop.utils import fetch_products
 from asgiref.sync import sync_to_async
 
 tags = ["Shop"]
@@ -79,29 +81,7 @@ class ProductsView(APIView):
         """,
         tags=tags,
         responses=PRODUCTS_RESPONSE,
-        parameters=[
-            OpenApiParameter(
-                name="name",
-                description="Filter products by its name",
-                required=False,
-                type=OpenApiTypes.STR,
-            ),
-            OpenApiParameter(
-                name="size",
-                type=OpenApiTypes.STR,
-                description="Filter products by size. Can be specified multiple times to include multiple sizes.",
-                required=False,
-                explode=True,
-            ),
-            OpenApiParameter(
-                name="color",
-                type=OpenApiTypes.STR,
-                description="Filter products by color. Can be specified multiple times to include multiple colors.",
-                required=False,
-                explode=True,
-            ),
-            *page_parameter_example("products", 100),
-        ],
+        parameters=PRODUCTS_PARAM_EXAMPLE,
     )
     async def get(self, request, *args, **kwargs):
         """
@@ -113,23 +93,7 @@ class ProductsView(APIView):
         Returns:
             CustomResponse: A response containing serialized and paginated product data.
         """
-        name_filter = request.GET.get("name")
-
-        products = (
-            Product.objects.select_related("category", "seller")
-            .prefetch_related("sizes", "colors")
-            .annotate(**REVIEWS_AND_RATING_ANNOTATION)
-            .filter(in_stock__gt=0)
-        )
-        if name_filter:
-            products = products.filter(name__icontains=name_filter)
-        products = await sync_to_async(list)(
-            color_size_filter_products(
-                products.order_by("-created_at"),
-                request.GET.getlist("size"),
-                request.GET.getlist("color"),
-            )
-        )
+        products = await fetch_products(request)
 
         paginated_data = self.paginator_class.paginate_queryset(products, request)
         serializer = self.serializer_class(paginated_data)
@@ -263,3 +227,37 @@ class ProductView(APIView):
         if self.request.method == "POST":
             return [IsAuthenticatedCustom()]
         return []
+
+
+class WishlistView(APIView):
+    """
+    API view to fetch all products in a wishlist.
+
+    Methods:
+        get: Asynchronously fetches and returns all products, with optional filtering by name, size, or color.
+    """
+
+    serializer_class = ProductsResponseDataSerializer
+    paginator_class = CustomPagination()
+    permission_classes = [IsAuthenticatedOrGuestCustom()]
+
+    @extend_schema(
+        summary="Wishlist Products Fetch",
+        description="""
+            This endpoint returns all products in the user or guest wishlist.
+            Products can be filtered by name, sizes or colors.
+        """,
+        tags=tags,
+        responses=PRODUCTS_RESPONSE,
+        parameters=PRODUCTS_PARAM_EXAMPLE,
+    )
+    async def get(self, request):
+        user = request.user
+        products = await fetch_products(
+            request, {Q(wishlist__user=user) | Q(wishlist__guest=user)}
+        )
+        paginated_data = self.paginator_class.paginate_queryset(products, request)
+        serializer = self.serializer_class(paginated_data)
+        return CustomResponse.success(
+            message="Wishlist Products Fetched Successfully", data=serializer.data
+        )
