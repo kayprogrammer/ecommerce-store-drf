@@ -32,6 +32,7 @@ class ErrorCode:
     NOT_ALLOWED = "not_allowed"
     INVALID_DATA_TYPE = "invalid_data_type"
     INVALID_CLIENT_ID = "invalid_client_id"
+    USED_COUPON = "used_coupon"
 
 
 class RequestError(APIException):
@@ -80,6 +81,9 @@ class ValidationError(RequestError):
         data = {field: message}
         super().__init__(err_msg, err_code, status_code, data)
 
+class NotFoundError(RequestError):
+    def __init__(self, err_msg: str, err_code: str = ErrorCode.NON_EXISTENT, status_code: int = 404, data: dict = None) -> None:
+        super().__init__(err_msg, err_code, status_code, data)
 
 def custom_exception_handler(exc, context):
     """

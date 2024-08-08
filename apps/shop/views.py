@@ -1,7 +1,8 @@
+from django.utils import timezone
 from adrf.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from apps.common.decorators import aatomic
-from apps.common.exceptions import ErrorCode, RequestError, ValidationError
+from apps.common.exceptions import ErrorCode, NotFoundError, RequestError, ValidationError
 from apps.common.paginators import CustomPagination
 from apps.common.permissions import IsAuthenticatedCustom, IsAuthenticatedOrGuestCustom
 from apps.common.responses import CustomResponse
@@ -10,7 +11,7 @@ from apps.common.utils import (
     REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION,
     get_user_or_guest,
 )
-from apps.shop.models import Category, OrderItem, Product, Review, Wishlist
+from apps.shop.models import Category, Coupon, Order, OrderItem, Product, Review, Wishlist
 from apps.shop.schema_examples import (
     CART_RESPONSE_EXAMPLE,
     CATEGORIES_RESPONSE,
@@ -461,3 +462,24 @@ class CartView(APIView):
             data=data,
             status_code=status_code,
         )
+
+class CheckoutView(APIView):
+
+    async def get(self, request, *args, **kwargs):
+        # Proceed to checkout
+        user = request.user
+        orderitems = OrderItem.objects.filter(user=user, order=None)
+        if not await orderitems.aexists():
+            raise NotFoundError(err_msg="No Items in Cart")
+        coupon = request.GET.get("coupon")
+        if coupon:
+            coupon = await Coupon.objects.aget_or_none(
+                code=coupon, expiry_date__gt=timezone.now()
+            )
+            if not coupon:
+                raise NotFoundError(err_msg="Coupon is Invalid/Expired")
+            if await Order.objects.filter(user=user, coupon=coupon).aexists():
+                raise RequestError(err_code=ErrorCode.USED_COUPON, err_msg="Coupon is invalid/expired")
+        order = await Order.objects.acreate(user=user, coupon=coupon)
+        await orderitems.aupdate(order=order)
+        return

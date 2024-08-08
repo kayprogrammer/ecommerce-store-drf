@@ -89,3 +89,7 @@ class ToggleCartItemSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(min_value=0)
     size = serializers.CharField(required=False)
     color = serializers.CharField(required=False)
+
+class CheckoutSerializer(serializers.Serializer):
+    coupon = serializers.CharField(required=False)
+    
