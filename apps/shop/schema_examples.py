@@ -5,7 +5,10 @@ from drf_spectacular.utils import (
     OpenApiTypes,
 )
 from apps.accounts.schema_examples import UNAUTHORIZED_USER_RESPONSE
+from apps.common.exceptions import ErrorCode
 from apps.common.schema_examples import (
+    DATETIME_EXAMPLE,
+    ERR_RESPONSE_STATUS,
     PAGINATED_RESPONSE_EXAMPLE,
     RESPONSE_TYPE,
     SUCCESS_RESPONSE_STATUS,
@@ -278,4 +281,108 @@ ORDERITEM_RESPONSE_EXAMPLE = {
         ],
     ),
     401: UNAUTHORIZED_USER_RESPONSE,
+}
+
+SHIPPING_DETAILS_EXAMPLE = {
+    "full_name": "John Doe",
+    "email": "johndoe@example.com",
+    "phone": "+2341099333443",
+    "address": "234, My Street, Aboru",
+    "city": "Lagos",
+    "state": "Lagos",
+    "country": "Nigeria",
+    "zipcode": "123456",
+}
+
+FULL_SHIPPING_DETAILS_EXAMPLE = {"id": UUID_EXAMPLE} | SHIPPING_DETAILS_EXAMPLE
+
+ORDER_DATA_EXAMPLE = {
+    "tx_ref": "JSDJASFHSDFHG",
+    "delivery_status": "PENDING",
+    "payment_status": "PENDING",
+    "payment_method": "PAYSTACK",
+    "coupon": "SADJSDJJS",
+    "date_delivered": DATETIME_EXAMPLE,
+    "shipping_details": SHIPPING_DETAILS_EXAMPLE,
+}
+CHECKOUT_RESPONSE_EXAMPLE = {
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Checkout Successful",
+        examples=[
+            OpenApiExample(
+                name="Checkout Successful",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Checkout Successful",
+                    "data": ORDER_DATA_EXAMPLE,
+                },
+            ),
+        ],
+    ),
+    401: UNAUTHORIZED_USER_RESPONSE,
+    404: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description=f"Empty Cart",
+        examples=[
+            OpenApiExample(
+                name="Non-existent Response",
+                value={
+                    "status": ERR_RESPONSE_STATUS,
+                    "code": ErrorCode.NON_EXISTENT,
+                    "message": "No Items in Cart",
+                },
+            )
+        ],
+    ),
+    422: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Field errors",
+        examples=[
+            OpenApiExample(
+                name="Invalid/Expired Coupon",
+                value={
+                    "status": ERR_RESPONSE_STATUS,
+                    "code": ErrorCode.INVALID_ENTRY,
+                    "message": "Invalid Entry",
+                    "data": {
+                        "coupon": "Coupon is Invalid/Expired!",
+                    },
+                },
+            ),
+            OpenApiExample(
+                name="Coupon already used",
+                value={
+                    "status": ERR_RESPONSE_STATUS,
+                    "code": ErrorCode.INVALID_ENTRY,
+                    "message": "Invalid Entry",
+                    "data": {
+                        "coupon": "You've used this coupon already",
+                    },
+                },
+            ),
+            OpenApiExample(
+                name="Invalid Shipping ID",
+                value={
+                    "status": ERR_RESPONSE_STATUS,
+                    "code": ErrorCode.INVALID_ENTRY,
+                    "message": "Invalid Entry",
+                    "data": {
+                        "shipping_id": "No shipping address with that ID",
+                    },
+                },
+            ),
+            OpenApiExample(
+                name="Invalid Country",
+                value={
+                    "status": ERR_RESPONSE_STATUS,
+                    "code": ErrorCode.INVALID_ENTRY,
+                    "message": "Invalid Entry",
+                    "data": {
+                        "country": "Country does not exist!",
+                    },
+                },
+            ),
+        ],
+    ),
 }

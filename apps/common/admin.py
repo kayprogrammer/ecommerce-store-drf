@@ -20,4 +20,7 @@ class BaseModelAdmin(admin.ModelAdmin):
         obj.hard_delete()
 
     def delete_queryset(self, request, queryset):
-        queryset.delete(hard_delete=True)
+        try:
+            queryset.delete(hard_delete=True)
+        except:
+            queryset.delete()

@@ -1,5 +1,5 @@
-from typing import Dict
-from apps.shop.models import Product
+from typing import Dict, Union
+from apps.shop.models import Product, ShippingAddress
 from asgiref.sync import sync_to_async
 from apps.common.utils import REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION
 
@@ -46,3 +46,23 @@ async def fetch_products(request, user, guest, extra_filter: Dict = None):
         )
     )
     return products
+
+
+def append_shipping_details(data: Dict, shipping: ShippingAddress):
+    fields_to_update = [
+        "full_name",
+        "email",
+        "phone",
+        "address",
+        "city",
+        "state",
+        "country",
+        "zipcode",
+    ]
+    for field in fields_to_update:
+        value = getattr(shipping, field)
+        if field == "country":
+            data["country"] = value.name
+        else:
+            data[field] = value
+    return data

@@ -147,20 +147,6 @@ class Product(IsDeletedModel):
     def image3_url(self):
         return self.return_img_url(self.image3)
 
-    @property
-    def default_size(self):
-        # There can be more better implementations to properties like this
-        # I have ideas but too tired to implement 🙂.
-        # Show me you're a real dev by working on that yourself. 😀
-        return self.sizes.first()
-
-    @property
-    def default_color(self):
-        # There can be more better implementations to properties like this
-        # I have ideas but too tired to implement 🙂.
-        # Show me you're a real dev by working on that yourself. 😀
-        return self.colors.first()
-
     def __str__(self):
         return str(self.name)
 
@@ -253,7 +239,7 @@ class ShippingAddress(BaseModel):
         User, on_delete=models.CASCADE, related_name="shipping_addresses"
     )
     full_name = models.CharField(max_length=1000)
-    email = models.EmailField(max_length=1000)
+    email = models.EmailField()
     phone = models.CharField(max_length=20, null=True)
     address = models.CharField(max_length=1000, null=True)
     city = models.CharField(max_length=200, null=True)
@@ -290,6 +276,9 @@ class Coupon(BaseModel):
             self.code = generate_unique_code(Coupon, "code")
         super().save(*args, **kwargs)
 
+    def __str__(self):
+        return str(self.code)
+
 
 class Order(IsDeletedModel):
     """
@@ -320,11 +309,18 @@ class Order(IsDeletedModel):
     payment_method = models.CharField(
         max_length=20, choices=PAYMENT_GATEWAY_CHOICES, null=True
     )
-    shipping_address = models.ForeignKey(
-        ShippingAddress, on_delete=models.SET_NULL, blank=True, null=True
-    )
     coupon = models.ForeignKey(Coupon, on_delete=models.SET_NULL, blank=True, null=True)
     date_delivered = models.DateTimeField(null=True, blank=True)
+
+    # Shipping address details
+    full_name = models.CharField(max_length=1000, null=True)
+    email = models.EmailField(null=True)
+    phone = models.CharField(max_length=20, null=True)
+    address = models.CharField(max_length=1000, null=True)
+    city = models.CharField(max_length=200, null=True)
+    state = models.CharField(max_length=200, null=True)
+    country = models.CharField(max_length=100, null=True)
+    zipcode = models.IntegerField(null=True)
 
     def __str__(self):
         return f"{self.user.full_name}'s order"
@@ -351,6 +347,13 @@ class Order(IsDeletedModel):
         if coupon:
             total = total - ((coupon.percentage_off * total) / 100)
         return total
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "coupon"], name="unique_user_coupon_order"
+            )
+        ]
 
 
 class OrderItem(BaseModel):
@@ -449,10 +452,6 @@ class OrderItem(BaseModel):
             if self.quantity == 0:
                 # Ensure to make it one just incase it's creating and the user sets 0
                 self.quantity = 1
-            if not self.color:
-                self.color = self.product.default_color
-            if not self.size:
-                self.size = self.product.default_size
         return super(OrderItem, self).save(*args, **kwargs)
 
 

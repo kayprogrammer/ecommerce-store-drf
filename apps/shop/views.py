@@ -2,7 +2,12 @@ from django.utils import timezone
 from adrf.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from apps.common.decorators import aatomic
-from apps.common.exceptions import ErrorCode, NotFoundError, RequestError, ValidationError
+from apps.common.exceptions import (
+    ErrorCode,
+    NotFoundError,
+    RequestError,
+    ValidationErr,
+)
 from apps.common.paginators import CustomPagination
 from apps.common.permissions import IsAuthenticatedCustom, IsAuthenticatedOrGuestCustom
 from apps.common.responses import CustomResponse
@@ -11,10 +16,21 @@ from apps.common.utils import (
     REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION,
     get_user_or_guest,
 )
-from apps.shop.models import Category, Coupon, Order, OrderItem, Product, Review, Wishlist
+from apps.shop.models import (
+    Category,
+    Country,
+    Coupon,
+    Order,
+    OrderItem,
+    Product,
+    Review,
+    ShippingAddress,
+    Wishlist,
+)
 from apps.shop.schema_examples import (
     CART_RESPONSE_EXAMPLE,
     CATEGORIES_RESPONSE,
+    CHECKOUT_RESPONSE_EXAMPLE,
     ORDERITEM_RESPONSE_EXAMPLE,
     PRODUCT_RESPONSE,
     PRODUCTS_BY_CATEGORY_RESPONSE_EXAMPLE,
@@ -25,14 +41,16 @@ from apps.shop.schema_examples import (
 )
 from apps.shop.serializers import (
     CategorySerializer,
+    CheckoutSerializer,
     OrderItemSerializer,
     OrderItemsResponseDataSerializer,
+    OrderSerializer,
     ProductDetailSerializer,
     ProductsResponseDataSerializer,
     ReviewSerializer,
     ToggleCartItemSerializer,
 )
-from apps.shop.utils import fetch_products
+from apps.shop.utils import append_shipping_details, fetch_products
 from asgiref.sync import sync_to_async
 
 tags = ["Shop"]
@@ -420,20 +438,23 @@ class CartView(APIView):
             slug=data["slug"]
         )
         if not product:
-            raise ValidationError("slug", "No Product with that slug")
+            raise ValidationErr("slug", "No Product with that slug")
+        if not size and (await product.sizes.aexists()):
+            raise ValidationErr("size", "Enter a size")
+        if not color and (await product.colors.aexists()):
+            raise ValidationErr("color", "Enter a color")
+
         if size:
             size = await product.sizes.aget_or_none(value=size)
             if not size:
-                raise ValidationError("size", "Invalid size selected")
+                raise ValidationErr("size", "Invalid size selected")
 
         if color:
             color = await product.colors.aget_or_none(value=color)
             if not color:
-                raise ValidationError("color", "Invalid color selected")
+                raise ValidationErr("color", "Invalid color selected")
 
-        orderitem, created = await OrderItem.objects.select_related(
-            "size", "color"
-        ).aupdate_or_create(
+        orderitem, created = await OrderItem.objects.aupdate_or_create(
             user=user,
             guest=guest,
             order_id=None,
@@ -442,7 +463,6 @@ class CartView(APIView):
             color=color,
             defaults={"quantity": quantity},
         )
-        print("Haaalala")
         resp_message_substring = "Updated In"
         status_code = 200
         if created:
@@ -455,6 +475,8 @@ class CartView(APIView):
         data = None
         if resp_message_substring != "Removed From":
             orderitem.product = product
+            orderitem.size = size
+            orderitem.color = color
             serializer = self.item_serializer_class(orderitem)
             data = serializer.data
         return CustomResponse.success(
@@ -463,23 +485,79 @@ class CartView(APIView):
             status_code=status_code,
         )
 
-class CheckoutView(APIView):
 
-    async def get(self, request, *args, **kwargs):
+class CheckoutView(APIView):
+    serializer_create_class = CheckoutSerializer
+    serializer_response_class = OrderSerializer
+    permission_classes = [IsAuthenticatedCustom]
+
+    @extend_schema(
+        summary="Checkout",
+        description="""
+            This endpoint allows a user to create an order throug which payment can then be made..
+            Use the tx_ref in the response to make payment to paystack or paypal
+            Enter a shipping id to use a created shipping address, otherwise enter shipping for new details entirely
+            Payment Methods allowed: "PAYSTACK", "PAYPAL"
+        """,
+        tags=tags,
+        request=serializer_create_class,
+        responses=CHECKOUT_RESPONSE_EXAMPLE,
+    )
+    @aatomic
+    async def post(self, request, *args, **kwargs):
         # Proceed to checkout
         user = request.user
         orderitems = OrderItem.objects.filter(user=user, order=None)
         if not await orderitems.aexists():
             raise NotFoundError(err_msg="No Items in Cart")
-        coupon = request.GET.get("coupon")
+
+        serializer = self.serializer_create_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        coupon = data.get("coupon")
         if coupon:
             coupon = await Coupon.objects.aget_or_none(
                 code=coupon, expiry_date__gt=timezone.now()
             )
             if not coupon:
-                raise NotFoundError(err_msg="Coupon is Invalid/Expired")
-            if await Order.objects.filter(user=user, coupon=coupon).aexists():
-                raise RequestError(err_code=ErrorCode.USED_COUPON, err_msg="Coupon is invalid/expired")
-        order = await Order.objects.acreate(user=user, coupon=coupon)
+                raise ValidationErr("coupon", "Coupon is Invalid/Expired!")
+            if await Order.objects.filter(user=user, coupon__code=coupon).aexists():
+                raise ValidationErr("coupon", "You've used this coupon already")
+
+        shipping_id = data.get("shipping_id")
+        shipping = data.get("shipping")
+        if shipping:
+            country = await Country.objects.aget_or_none(name=shipping["country"])
+            if not country:
+                raise RequestError(
+                    err_code=ErrorCode.INVALID_ENTRY,
+                    err_msg="Invalid Entry",
+                    data={"shipping": {"country": "Country does not exist"}},
+                )
+            shipping["country"] = country
+            # Get or create shipping based on the shipping details entered by a user
+            shipping, created = await ShippingAddress.objects.select_related(
+                "country"
+            ).aget_or_create(**shipping, defaults={"user": user})
+        if shipping_id:
+            # Get shipping details based on the shipping id entered by a user
+            shipping = await ShippingAddress.objects.select_related(
+                "country"
+            ).aget_or_none(id=shipping_id)
+            if not shipping:
+                raise ValidationErr("shipping_id", "No shipping address with that ID")
+
+        data_to_append_to_order = append_shipping_details(
+            {
+                "payment_method": data["payment_method"],
+            },
+            shipping,
+        )
+        order = await Order.objects.acreate(
+            user=user, coupon=coupon, **data_to_append_to_order
+        )
         await orderitems.aupdate(order=order)
-        return
+        serializer = self.serializer_response_class(order)
+        return CustomResponse.success(
+            message="Checkout Successful", data=serializer.data
+        )

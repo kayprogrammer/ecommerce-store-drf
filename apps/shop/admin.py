@@ -1,5 +1,5 @@
 from django.contrib import admin
-
+from django.utils.translation import gettext_lazy as _
 from apps.common.admin import BaseModelAdmin
 
 from .models import (
@@ -67,6 +67,38 @@ class OrderAdmin(BaseModelAdmin):
         "created_at",
     )
     list_filter = list_display
+
+    fieldsets = (
+        (
+            _("Order Details"),
+            {
+                "fields": (
+                    "user",
+                    "tx_ref",
+                    "payment_method",
+                    "payment_status",
+                    "delivery_status",
+                    "coupon",
+                    "date_delivered",
+                )
+            },
+        ),
+        (
+            _("Shipping Details"),
+            {
+                "fields": (
+                    "full_name",
+                    "email",
+                    "phone",
+                    "address",
+                    "city",
+                    "state",
+                    "country",
+                    "zipcode",
+                )
+            },
+        ),
+    )
 
 
 class OrderItemAdmin(BaseModelAdmin):

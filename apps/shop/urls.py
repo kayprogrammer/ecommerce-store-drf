@@ -9,4 +9,5 @@ urlpatterns = [
     path("wishlist/", views.WishlistView.as_view()),
     path("wishlist/<slug:slug>/", views.ToggleWishlistView.as_view()),
     path("cart/", views.CartView.as_view()),
+    path("checkout/", views.CheckoutView.as_view()),
 ]

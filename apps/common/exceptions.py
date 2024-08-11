@@ -69,21 +69,29 @@ class RequestError(APIException):
         super().__init__()
 
 
-class ValidationError(RequestError):
+class NotFoundError(RequestError):
     def __init__(
         self,
-        field: str,
-        message: str,
-        err_msg: str = "Invalid Entry",
-        err_code: str = ErrorCode.INVALID_ENTRY,
-        status_code: int = 422,
+        err_msg: str,
+        err_code: str = ErrorCode.NON_EXISTENT,
+        status_code: int = 404,
+        data: dict = None,
     ) -> None:
-        data = {field: message}
         super().__init__(err_msg, err_code, status_code, data)
 
-class NotFoundError(RequestError):
-    def __init__(self, err_msg: str, err_code: str = ErrorCode.NON_EXISTENT, status_code: int = 404, data: dict = None) -> None:
-        super().__init__(err_msg, err_code, status_code, data)
+
+def process_validation_errors(errors):
+    for key in errors:
+        if isinstance(errors[key], dict):
+            # Recursively process nested fields
+            process_validation_errors(errors[key])
+        else:
+            err_val = str(errors[key][0]).replace('"', "")
+            errors[key] = err_val
+            if isinstance(err_val, list):
+                errors[key] = err_val
+    return errors
+
 
 def custom_exception_handler(exc, context):
     """
@@ -114,11 +122,7 @@ def custom_exception_handler(exc, context):
             )
         elif isinstance(exc, ValidationError):
             errors = exc.detail
-            for key in errors:
-                err_val = str(errors[key][0]).replace('"', "")
-                errors[key] = err_val
-                if isinstance(err_val, list):
-                    errors[key] = err_val
+            errors = process_validation_errors(errors)
 
             return CustomResponse.error(
                 message="Invalid Entry",
@@ -127,7 +131,7 @@ def custom_exception_handler(exc, context):
                 err_code=ErrorCode.INVALID_ENTRY,
             )
         else:
-            print(exc)
+            print("Unknown", exc)
             return CustomResponse.error(
                 message="Something went wrong!",
                 status_code=(
@@ -140,3 +144,16 @@ def custom_exception_handler(exc, context):
         return CustomResponse.error(
             message="Server Error", status_code=500, err_code=ErrorCode.SERVER_ERROR
         )
+
+
+class ValidationErr(RequestError):
+    def __init__(
+        self,
+        field: str,
+        message: str,
+        err_msg: str = "Invalid Entry",
+        err_code: str = ErrorCode.INVALID_ENTRY,
+        status_code: int = 422,
+    ) -> None:
+        data = {field: message}
+        super().__init__(err_msg, err_code, status_code, data)
