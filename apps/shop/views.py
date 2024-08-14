@@ -405,7 +405,7 @@ class CartView(APIView):
         user, guest = get_user_or_guest(request.user)
         orderitems = await sync_to_async(list)(
             OrderItem.objects.filter(user=user, guest=guest, order=None).select_related(
-                "product", "size", "color"
+                "product", "product__seller", "size", "color"
             )
         )
         paginated_data = self.paginator_class.paginate_queryset(orderitems, request)
@@ -529,14 +529,10 @@ class CheckoutView(APIView):
         if shipping:
             country = await Country.objects.aget_or_none(name=shipping["country"])
             if not country:
-                raise RequestError(
-                    err_code=ErrorCode.INVALID_ENTRY,
-                    err_msg="Invalid Entry",
-                    data={"shipping": {"country": "Country does not exist"}},
-                )
+                raise ValidationErr("shipping", {"country": "Country does not exist"})
             shipping["country"] = country
             # Get or create shipping based on the shipping details entered by a user
-            shipping, created = await ShippingAddress.objects.select_related(
+            shipping, _ = await ShippingAddress.objects.select_related(
                 "country"
             ).aget_or_create(**shipping, defaults={"user": user})
         if shipping_id:
