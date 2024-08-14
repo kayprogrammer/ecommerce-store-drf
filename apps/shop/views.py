@@ -9,7 +9,11 @@ from apps.common.exceptions import (
     ValidationErr,
 )
 from apps.common.paginators import CustomPagination
-from apps.common.permissions import IsAuthenticatedCustom, IsAuthenticatedOrGuestCustom
+from apps.common.permissions import (
+    IsAuthenticatedCustom,
+    IsAuthenticatedOrGuestCustom,
+    set_dict_attr,
+)
 from apps.common.responses import CustomResponse
 from apps.common.schema_examples import page_parameter_example
 from apps.common.utils import (
@@ -37,6 +41,10 @@ from apps.shop.schema_examples import (
     PRODUCTS_PARAM_EXAMPLE,
     PRODUCTS_RESPONSE,
     REVIEW_RESPONSE_EXAMPLE,
+    SHIPPING_ADDRESS_CREATE_RESPONSE_EXAMPLE,
+    SHIPPING_ADDRESS_GET_RESPONSE_EXAMPLE,
+    SHIPPING_ADDRESS_UPDATE_RESPONSE_EXAMPLE,
+    SHIPPING_ADDRESSES_RESPONSE_EXAMPLE,
     WISHLIST_RESPONSE_EXAMPLE,
 )
 from apps.shop.serializers import (
@@ -48,6 +56,7 @@ from apps.shop.serializers import (
     ProductDetailSerializer,
     ProductsResponseDataSerializer,
     ReviewSerializer,
+    ShippingAddressSerializerWithID,
     ToggleCartItemSerializer,
 )
 from apps.shop.utils import append_shipping_details, fetch_products
@@ -556,4 +565,112 @@ class CheckoutView(APIView):
         serializer = self.serializer_response_class(order)
         return CustomResponse.success(
             message="Checkout Successful", data=serializer.data
+        )
+
+
+class ShippingAddressesView(APIView):
+    serializer_class = ShippingAddressSerializerWithID
+    permission_classes = [IsAuthenticatedCustom]
+
+    @extend_schema(
+        summary="Shipping Addresses Fetch",
+        description="""
+            This endpoint returns all shipping addresses associated with a user.
+        """,
+        tags=tags,
+        responses=SHIPPING_ADDRESSES_RESPONSE_EXAMPLE,
+    )
+    async def get(self, request, *args, **kwargs):
+        user = request.user
+        shipping_addresses = await sync_to_async(list)(
+            ShippingAddress.objects.select_related("country").filter(user=user)
+        )
+        serializer = self.serializer_class(shipping_addresses, many=True)
+        return CustomResponse.success(
+            message="Shipping addresses returned", data=serializer.data
+        )
+
+    @extend_schema(
+        summary="Create Shipping Address",
+        description="""
+            This endpoint allows a user to create a shipping address.
+        """,
+        tags=tags,
+        responses=SHIPPING_ADDRESS_CREATE_RESPONSE_EXAMPLE,
+    )
+    async def post(self, request, *args, **kwargs):
+        user = request.user
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        country = data.pop("country")
+        country = await Country.objects.aget_or_none(name=country)
+        if not country:
+            raise ValidationErr("country", "Invalid country selected")
+        shipping_address, _ = await ShippingAddress.objects.select_related(
+            "country"
+        ).aget_or_create(user=user, country=country, **data)
+        serializer = self.serializer_class(shipping_address)
+        return CustomResponse.success(
+            message="Shipping address created successfully",
+            data=serializer.data,
+            status_code=201,
+        )
+
+
+class ShippingAddressView(APIView):
+    serializer_class = ShippingAddressSerializerWithID
+    permission_classes = [IsAuthenticatedCustom]
+
+    @extend_schema(
+        summary="Shipping Address Fetch",
+        description="""
+            This endpoint returns a single shipping address associated with a user.
+        """,
+        tags=tags,
+        responses=SHIPPING_ADDRESS_GET_RESPONSE_EXAMPLE,
+    )
+    async def get(self, request, *args, **kwargs):
+        user = request.user
+        shipping_address = await ShippingAddress.objects.select_related(
+            "country"
+        ).aget_or_none(user=user, id=kwargs["id"])
+        if not shipping_address:
+            raise NotFoundError("User does not have a shipping address with that ID")
+        serializer = self.serializer_class(shipping_address)
+        return CustomResponse.success(
+            message="Shipping address returned", data=serializer.data
+        )
+
+    @extend_schema(
+        summary="Update Shipping Address",
+        description="""
+            This endpoint allows a user to update his/her shipping address.
+        """,
+        tags=tags,
+        responses=SHIPPING_ADDRESS_UPDATE_RESPONSE_EXAMPLE,
+    )
+    async def put(self, request, *args, **kwargs):
+        user = request.user
+        shipping_address = await ShippingAddress.objects.select_related(
+            "country"
+        ).aget_or_none(user=user, id=kwargs["id"])
+        if not shipping_address:
+            raise NotFoundError("User does not have a shipping address with that ID")
+
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        country = data.pop("country")
+        country = await Country.objects.aget_or_none(name=country)
+        if not country:
+            raise ValidationErr("country", "Invalid country selected")
+        shipping_address.country = country
+        shipping_address = set_dict_attr(shipping_address, data)
+        await shipping_address.asave()
+        serializer = self.serializer_class(shipping_address)
+        return CustomResponse.success(
+            message="Shipping address updated successfully",
+            data=serializer.data,
+            status_code=200,
         )

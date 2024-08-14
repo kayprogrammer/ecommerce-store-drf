@@ -12,6 +12,7 @@ from apps.common.schema_examples import (
     PAGINATED_RESPONSE_EXAMPLE,
     RESPONSE_TYPE,
     SUCCESS_RESPONSE_STATUS,
+    UNPROCESSABLE_ENTITY_EXAMPLE,
     UUID_EXAMPLE,
     non_existent_response_example,
     page_parameter_example,
@@ -385,4 +386,80 @@ CHECKOUT_RESPONSE_EXAMPLE = {
             ),
         ],
     ),
+}
+
+SHIPPING_ADDRESSES_RESPONSE_EXAMPLE = {
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Shipping addresses returned",
+        examples=[
+            OpenApiExample(
+                name="Shipping addresses returned",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Shipping addresses returned",
+                    "data": [FULL_SHIPPING_DETAILS_EXAMPLE],
+                },
+            ),
+        ],
+    ),
+    401: UNAUTHORIZED_USER_RESPONSE,
+}
+
+SHIPPING_ADDRESS_CREATE_RESPONSE_EXAMPLE = {
+    201: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Shipping address created successfully",
+        examples=[
+            OpenApiExample(
+                name="Shipping address created successfully",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Shipping address created successfully",
+                    "data": FULL_SHIPPING_DETAILS_EXAMPLE,
+                },
+            ),
+        ],
+    ),
+    401: UNAUTHORIZED_USER_RESPONSE,
+    422: UNPROCESSABLE_ENTITY_EXAMPLE,
+}
+
+SHIPPING_ADDRESS_GET_RESPONSE_EXAMPLE = {
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Shipping address fetched successfully",
+        examples=[
+            OpenApiExample(
+                name="Shipping address fetched successfully",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Shipping address fetched successfully",
+                    "data": FULL_SHIPPING_DETAILS_EXAMPLE,
+                },
+            ),
+        ],
+    ),
+    401: UNAUTHORIZED_USER_RESPONSE,
+    404: non_existent_response_example("Shipping Address"),
+}
+
+SHIPPING_ADDRESS_UPDATE_RESPONSE_EXAMPLE = {
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Shipping address updated successfully",
+        examples=[
+            OpenApiExample(
+                name="Shipping address updated successfully",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Shipping address updated successfully",
+                    "data": FULL_SHIPPING_DETAILS_EXAMPLE,
+                },
+            ),
+        ],
+    ),
+    401: UNAUTHORIZED_USER_RESPONSE,
+    404: non_existent_response_example("Shipping Address"),
+    422: UNPROCESSABLE_ENTITY_EXAMPLE,
 }

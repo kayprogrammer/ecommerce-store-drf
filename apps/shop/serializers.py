@@ -1,11 +1,10 @@
-from django.utils import timezone
 from rest_framework import serializers
 
 from apps.common.serializers import (
     PaginatedResponseDataSerializer,
 )
 from apps.shop.choices import PAYMENT_GATEWAY_CHOICES, RATING_CHOICES
-from apps.shop.models import Coupon, Product
+from apps.shop.models import Product
 from apps.shop.validators import PHONE_REGEX_VALIDATOR
 
 

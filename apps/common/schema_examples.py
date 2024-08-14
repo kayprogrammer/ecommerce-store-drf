@@ -45,3 +45,21 @@ def non_existent_response_example(object_type):
             )
         ],
     )
+
+
+UNPROCESSABLE_ENTITY_EXAMPLE = (
+    OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Invalid Entry",
+        examples=[
+            OpenApiExample(
+                name="Invalid Entry",
+                value={
+                    "status": ERR_RESPONSE_STATUS,
+                    "message": "Invalid Entry",
+                    "data": {"field": "value"},
+                },
+            ),
+        ],
+    ),
+)
