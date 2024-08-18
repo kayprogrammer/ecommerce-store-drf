@@ -1,6 +1,10 @@
+from django.conf import settings
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from adrf.views import APIView
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from apps.accounts.senders import EmailUtil
 from apps.common.decorators import aatomic
 from apps.common.exceptions import (
     ErrorCode,
@@ -42,6 +46,7 @@ from apps.shop.schema_examples import (
     PRODUCTS_RESPONSE,
     REVIEW_RESPONSE_EXAMPLE,
     SHIPPING_ADDRESS_CREATE_RESPONSE_EXAMPLE,
+    SHIPPING_ADDRESS_DELETE_RESPONSE_EXAMPLE,
     SHIPPING_ADDRESS_GET_RESPONSE_EXAMPLE,
     SHIPPING_ADDRESS_UPDATE_RESPONSE_EXAMPLE,
     SHIPPING_ADDRESSES_RESPONSE_EXAMPLE,
@@ -59,8 +64,14 @@ from apps.shop.serializers import (
     ShippingAddressSerializerWithID,
     ToggleCartItemSerializer,
 )
-from apps.shop.utils import append_shipping_details, fetch_products
+from apps.shop.utils import (
+    append_shipping_details,
+    fetch_products,
+    update_product_in_stock,
+    verify_webhook_signature,
+)
 from asgiref.sync import sync_to_async
+import hashlib, hmac, json, decimal
 
 tags = ["Shop"]
 
@@ -496,6 +507,23 @@ class CartView(APIView):
 
 
 class CheckoutView(APIView):
+    """
+    View for handling the order creation process.
+
+    This view allows authenticated users to create an order and proceed to payment.
+    Users can apply coupons, use existing shipping addresses, or create new shipping
+    addresses during the checkout process. Supported payment methods include PAYSTACK
+    and PAYPAL.
+
+    Attributes:
+        serializer_create_class (CheckoutSerializer): Serializer class for creating an order.
+        serializer_response_class (OrderSerializer): Serializer class for the response after creating an order.
+        permission_classes (list): List of permission classes, allowing only authenticated users.
+
+    Methods:
+        post(request, *args, **kwargs): Handles the checkout process and returns a response with the order details.
+    """
+
     serializer_create_class = CheckoutSerializer
     serializer_response_class = OrderSerializer
     permission_classes = [IsAuthenticatedCustom]
@@ -569,6 +597,20 @@ class CheckoutView(APIView):
 
 
 class ShippingAddressesView(APIView):
+    """
+    View for handling shipping addresses associated with a user.
+
+    This view allows users to fetch all their shipping addresses or create new ones.
+
+    Attributes:
+        serializer_class (ShippingAddressSerializerWithID): Serializer class for handling shipping address data.
+        permission_classes (list): List of permission classes, allowing only authenticated users.
+
+    Methods:
+        get(request, *args, **kwargs): Fetch all shipping addresses associated with the authenticated user.
+        post(request, *args, **kwargs): Create a new shipping address for the authenticated user.
+    """
+
     serializer_class = ShippingAddressSerializerWithID
     permission_classes = [IsAuthenticatedCustom]
 
@@ -619,8 +661,31 @@ class ShippingAddressesView(APIView):
 
 
 class ShippingAddressView(APIView):
+    """
+    View for handling a single shipping address associated with a user.
+
+    This view allows users to fetch, update, or delete a specific shipping address.
+
+    Attributes:
+        serializer_class (ShippingAddressSerializerWithID): Serializer class for handling shipping address data.
+        permission_classes (list): List of permission classes, allowing only authenticated users.
+
+    Methods:
+        get(request, *args, **kwargs): Fetch a single shipping address associated with the authenticated user.
+        put(request, *args, **kwargs): Update a specific shipping address for the authenticated user.
+        delete(request, *args, **kwargs): Delete a specific shipping address for the authenticated user.
+    """
+
     serializer_class = ShippingAddressSerializerWithID
     permission_classes = [IsAuthenticatedCustom]
+
+    async def get_object(self, user, shipping_id):
+        shipping_address = await ShippingAddress.objects.select_related(
+            "country"
+        ).aget_or_none(user=user, id=shipping_id)
+        if not shipping_address:
+            raise NotFoundError("User does not have a shipping address with that ID")
+        return shipping_address
 
     @extend_schema(
         summary="Shipping Address Fetch",
@@ -632,11 +697,7 @@ class ShippingAddressView(APIView):
     )
     async def get(self, request, *args, **kwargs):
         user = request.user
-        shipping_address = await ShippingAddress.objects.select_related(
-            "country"
-        ).aget_or_none(user=user, id=kwargs["id"])
-        if not shipping_address:
-            raise NotFoundError("User does not have a shipping address with that ID")
+        shipping_address = await self.get_object(user, kwargs["id"])
         serializer = self.serializer_class(shipping_address)
         return CustomResponse.success(
             message="Shipping address returned", data=serializer.data
@@ -652,12 +713,7 @@ class ShippingAddressView(APIView):
     )
     async def put(self, request, *args, **kwargs):
         user = request.user
-        shipping_address = await ShippingAddress.objects.select_related(
-            "country"
-        ).aget_or_none(user=user, id=kwargs["id"])
-        if not shipping_address:
-            raise NotFoundError("User does not have a shipping address with that ID")
-
+        shipping_address = await self.get_object(user, kwargs["id"])
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -674,3 +730,147 @@ class ShippingAddressView(APIView):
             data=serializer.data,
             status_code=200,
         )
+
+    @extend_schema(
+        summary="Delete Shipping Address",
+        description="""
+            This endpoint allows a user to delete his/her shipping address.
+        """,
+        tags=tags,
+        responses=SHIPPING_ADDRESS_DELETE_RESPONSE_EXAMPLE,
+    )
+    async def delete(self, request, *args, **kwargs):
+        user = request.user
+        shipping_address = await ShippingAddress.objects.aget_or_none(
+            user=user, id=kwargs["id"]
+        )
+        if not shipping_address:
+            raise NotFoundError("User does not have a shipping address with that ID")
+        await shipping_address.adelete()
+        return CustomResponse.success(message="Shipping address deleted successfully")
+
+
+@csrf_exempt
+def paystack_webhook(request):
+    # retrive the payload from the request body
+    payload = request.body
+    # signature header to to verify the request is from paystack
+    sig_header = request.headers["x-paystack-signature"]
+    body, event = None, None
+
+    try:
+        # sign the payload with `HMAC SHA512`
+        hash = hmac.new(
+            settings.PAYSTACK_SECRET_KEY.encode("utf-8"),
+            payload,
+            digestmod=hashlib.sha512,
+        ).hexdigest()
+        # compare our signature with paystacks signature
+        if hash == sig_header:
+            # if signature matches,
+            # proceed to retrive event status from payload
+            body_unicode = payload.decode("utf-8")
+            body = json.loads(body_unicode)
+            # event status
+            event = body["event"]
+        else:
+            raise Exception
+    except Exception as e:
+        return HttpResponse(status=400)
+
+    if event == "charge.success":
+        data = body["data"]
+        if (data["status"] == "success") and (data["gateway_response"] == "Successful"):
+            order = (
+                Order.objects.prefetch_related("orderitems")
+                .prefetch_related("orderitems__product")
+                .get_or_none(tx_ref=data["reference"])
+            )
+            amount_paid = data["amount"] / 100
+            if not order:
+                customer = data["customer"]
+                name = f"{customer.get('first_name', 'John')} {customer.get('last_name', 'Doe')}"
+                email = customer.get("email")
+                EmailUtil.send_payment_failed_email(request, name, email, amount_paid)
+                return HttpResponse(status=200)
+            amount_payable = order.get_cart_total
+            user = order.user
+            if amount_paid < amount_payable:
+                # You made an invalid payment
+                EmailUtil.send_payment_failed_email(
+                    request, user.full_name, user.email, amount_paid
+                )
+                order.payment_status = "FAILED"
+                order.save()
+                return HttpResponse(status=200)
+
+            order.payment_status = "SUCCESSFUL"
+            order.save()
+            update_product_in_stock(order.orderitems.all())
+            # Send email
+            EmailUtil.send_payment_success_email(
+                request, user.full_name, user.email, amount_payable
+            )
+        else:
+            return HttpResponse(status=200)
+    return HttpResponse(status=200)
+
+
+@csrf_exempt
+def paypal_webhook(request):
+    payload = request.body
+    headers = request.headers
+    # Verify webhook signature
+    transmission_id = headers.get("Paypal-Transmission-Id")
+    transmission_time = headers.get("Paypal-Transmission-Time")
+    cert_url = headers.get("Paypal-Cert-Url")
+    auth_algo = headers.get("Paypal-Auth-Algo")
+    transmission_sig = headers.get("Paypal-Transmission-Sig")
+    webhook_id = settings.PAYPAL_WEBHOOK_ID
+    valid_sig = verify_webhook_signature(
+        transmission_sig,
+        transmission_id,
+        transmission_time,
+        webhook_id,
+        payload.decode("utf-8"),
+        cert_url,
+        auth_algo,
+    )
+    if valid_sig:
+        event = json.loads(payload)
+
+        if event["event_type"] == "CHECKOUT.ORDER.APPROVED":
+            # Handle payment completed event
+            resource = event["resource"]
+            purchase_unit = resource["purchase_units"][0]
+            amount_paid = decimal.Decimal(purchase_unit["amount"]["value"])
+            order = (
+                Order.objects.prefetch_related("orderitems")
+                .prefetch_related("orderitems__product")
+                .get_or_none(tx_ref=purchase_unit["reference_id"])
+            )
+            if not order:
+                return HttpResponse(status=200)
+            if order.payment_status != "SUCCESSFUL":
+                user = order.user
+                amount_payable = order.get_cart_total
+                if amount_paid < amount_payable:
+                    # You made an invalid payment
+                    EmailUtil.send_payment_failed_email(
+                        request, user.full_name, user.email, amount_paid
+                    )
+                    order.payment_status = "FAILED"
+                    order.save()
+                    return HttpResponse(status=200)
+
+                order.payment_status = "SUCCESSFUL"
+                order.save()
+
+                update_product_in_stock(order.orderitems.all())
+                # Send email
+                EmailUtil.send_payment_success_email(
+                    request, user.full_name, user.email, amount_payable
+                )
+        return HttpResponse(status=200)
+    else:
+        return HttpResponse(status=200)

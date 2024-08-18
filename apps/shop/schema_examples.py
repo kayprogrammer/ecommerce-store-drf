@@ -463,3 +463,21 @@ SHIPPING_ADDRESS_UPDATE_RESPONSE_EXAMPLE = {
     404: non_existent_response_example("Shipping Address"),
     422: UNPROCESSABLE_ENTITY_EXAMPLE,
 }
+
+SHIPPING_ADDRESS_DELETE_RESPONSE_EXAMPLE = {
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Deletion Successful.",
+        examples=[
+            OpenApiExample(
+                name="Success Response",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Shipping address deleted successfully",
+                },
+            )
+        ],
+    ),
+    404: non_existent_response_example("Shipping Address"),
+    401: UNAUTHORIZED_USER_RESPONSE,
+}
