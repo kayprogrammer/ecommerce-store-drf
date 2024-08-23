@@ -752,6 +752,20 @@ class ShippingAddressView(APIView):
 
 @csrf_exempt
 def paystack_webhook(request):
+    """
+    Handle Paystack webhook events.
+
+    This function processes webhook events sent by Paystack, such as payment success notifications.
+    It verifies the event signature, retrieves the relevant order, and updates the order status
+    based on the payment outcome.
+
+    Args:
+        request (HttpRequest): The HTTP request object containing the webhook payload.
+
+    Returns:
+        HttpResponse: An HTTP response indicating the result of the webhook processing.
+    """
+
     # retrive the payload from the request body
     payload = request.body
     # signature header to to verify the request is from paystack
@@ -818,6 +832,20 @@ def paystack_webhook(request):
 
 @csrf_exempt
 def paypal_webhook(request):
+    """
+    Handle PayPal webhook events.
+
+    This function processes webhook events sent by PayPal, such as payment completion notifications.
+    It verifies the event signature, retrieves the relevant order, and updates the order status
+    based on the payment outcome.
+
+    Args:
+        request (HttpRequest): The HTTP request object containing the webhook payload.
+
+    Returns:
+        HttpResponse: An HTTP response indicating the result of the webhook processing.
+    """
+
     payload = request.body
     headers = request.headers
     # Verify webhook signature
