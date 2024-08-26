@@ -23,7 +23,7 @@
             font-weight:bold;
         }
         /* CSS for the custom Facebook login button */
-        .fb-button, .google-button {
+        .fb-button, .google-button, .paystack-btn {
             background-color: white;
             color: #1877F2;
             border: 2px solid #1877F2;
@@ -41,10 +41,10 @@
             margin-bottom: 9px;
             height: 30px; /* Match the height of the cancel button */
         }
-        .fb-button:hover, .google-button:hover {
+        .fb-button:hover, .google-button:hover, .paystack-btn:hover {
             background-color: #f1f1f1;
         }
-        .fb-button p, .google-button p {
+        .fb-button p, .google-button p, .paystack-btn p {
             font-size: 14px;
             margin: 0; /* Remove default margin */
         }
@@ -63,6 +63,7 @@
                 {% include template_name_js %}
             </script>
         {% endif %}
+        <script src="https://js.paystack.co/v2/inline.js"></script>
         <script>
             window.fbAsyncInit = function () {
                 FB.init({
@@ -194,6 +195,52 @@
                             childList: true,
                             subtree: true
                         });
+
+
+                    },
+                    responseInterceptor: (response) => {
+                        // FOR PAYMENT GATEWAY
+                        function payWithPaystack(data) {
+                            let handler = PaystackPop.setup({
+
+                            key: "{{ paystack_public_key }}", 
+                            
+                            firstname: data.first_name,
+                            lastname: data.last_name,
+                            email: data.email,
+
+                            amount: data.total * 100,
+
+                            ref: data.tx_ref,
+                            });
+
+                            handler.openIframe();
+
+                        }
+
+                        // Check if the response is from the checkout endpoint
+                        if (response.url.endsWith('/checkout/')) {
+                            const data = response.body.data
+                            const paymentMethod = data.payment_method;
+                            const checkoutDialog = document.querySelector('#operations-Shop-shop_checkout_create');
+                            const cancelButton = checkoutDialog.querySelector('.cancel');
+                            if (paymentMethod === "PAYSTACK") {
+                                let paystackButton = checkoutDialog.querySelector('.paystack-btn');
+                                if (!paystackButton) {
+                                    paystackButton = document.createElement('button');
+                                    paystackButton.className = 'paystack-btn';
+                                    paystackButton.innerHTML = "<p>Pay with Paystack</p>";
+                                }
+                                paystackButton.onclick = function() {
+                                    // Paystack payment integration logic
+                                    // Example: open Paystack payment dialog
+                                    payWithPaystack(data)
+                                };
+                                cancelButton.parentNode.insertBefore(paystackButton, cancelButton);
+                            }
+                        }
+
+                        return response;
                     }
                 });
             };

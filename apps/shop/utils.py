@@ -1,9 +1,9 @@
 import json
-from typing import Dict, Union
+from typing import Dict, List
 
 from django.conf import settings
 import requests
-from apps.shop.models import Product, ShippingAddress
+from apps.shop.models import Order, OrderItem, Product, ShippingAddress
 from asgiref.sync import sync_to_async
 from apps.common.utils import REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION
 

@@ -40,6 +40,8 @@ from apps.shop.schema_examples import (
     CATEGORIES_RESPONSE,
     CHECKOUT_RESPONSE_EXAMPLE,
     ORDERITEM_RESPONSE_EXAMPLE,
+    ORDERS_PARAM_EXAMPLE,
+    ORDERS_RESPONSE_EXAMPLE,
     PRODUCT_RESPONSE,
     PRODUCTS_BY_CATEGORY_RESPONSE_EXAMPLE,
     PRODUCTS_PARAM_EXAMPLE,
@@ -58,6 +60,7 @@ from apps.shop.serializers import (
     OrderItemSerializer,
     OrderItemsResponseDataSerializer,
     OrderSerializer,
+    OrdersResponseDataSerializer,
     ProductDetailSerializer,
     ProductsResponseDataSerializer,
     ReviewSerializer,
@@ -531,10 +534,11 @@ class CheckoutView(APIView):
     @extend_schema(
         summary="Checkout",
         description="""
-            This endpoint allows a user to create an order throug which payment can then be made..
+            This endpoint allows a user to create an order through which payment can then be made through a frontend sdk..
             Use the tx_ref in the response to make payment to paystack or paypal
             Enter a shipping id to use a created shipping address, otherwise enter shipping for new details entirely
             Payment Methods allowed: "PAYSTACK", "PAYPAL"
+            If you select paystack, a paystack button will be generated before the cancel button which represents a test client you can use to test the returned data
         """,
         tags=tags,
         request=serializer_create_class,
@@ -590,6 +594,12 @@ class CheckoutView(APIView):
             user=user, coupon=coupon, **data_to_append_to_order
         )
         await orderitems.aupdate(order=order)
+        # Reload order to prevent async errors
+        order = (
+            await Order.objects.select_related("user")
+            .prefetch_related("orderitems", "orderitems__product")
+            .aget_or_none(id=order.id)
+        )
         serializer = self.serializer_response_class(order)
         return CustomResponse.success(
             message="Checkout Successful", data=serializer.data
@@ -750,6 +760,51 @@ class ShippingAddressView(APIView):
         return CustomResponse.success(message="Shipping address deleted successfully")
 
 
+class OrdersView(APIView):
+    """
+    API view to fetch all orders for a user.
+
+    Methods:
+        get: Asynchronously fetches and returns all users, with optional filtering by payment status, delivery status.
+    """
+
+    permission_classes = [IsAuthenticatedCustom]
+    serializer_class = OrdersResponseDataSerializer
+    paginator_class = CustomPagination()
+
+    @extend_schema(
+        summary="Orders Fetch",
+        description="""
+            This endpoint returns all orders for a particular user.
+            Orders can be filtered by payment status or delivery status.
+        """,
+        tags=tags,
+        responses=ORDERS_RESPONSE_EXAMPLE,
+        parameters=ORDERS_PARAM_EXAMPLE,
+    )
+    async def get(self, request):
+        user = request.user
+        payment_status = request.GET.get("payment_status")
+        delivery_status = request.GET.get("delivery_status")
+        filter_ = {"user": user}
+        if payment_status:
+            filter_["payment_status"] = payment_status
+        if delivery_status:
+            filter_["delivery_status"] = delivery_status
+
+        orders = await sync_to_async(list)(
+            Order.objects.filter(**filter_)
+            .select_related("user", "coupon")
+            .prefetch_related("orderitems", "orderitems__product")
+            .order_by("-created_at")
+        )
+        paginated_data = self.paginator_class.paginate_queryset(orders, request)
+        serializer = self.serializer_class(paginated_data)
+        return CustomResponse.success(
+            message="Orders Fetched Successfully", data=serializer.data
+        )
+
+
 @csrf_exempt
 def paystack_webhook(request):
     """
@@ -805,14 +860,14 @@ def paystack_webhook(request):
                 customer = data["customer"]
                 name = f"{customer.get('first_name', 'John')} {customer.get('last_name', 'Doe')}"
                 email = customer.get("email")
-                EmailUtil.send_payment_failed_email(request, name, email, amount_paid)
+                EmailUtil.send_payment_failed_email(name, email, amount_paid)
                 return HttpResponse(status=200)
             amount_payable = order.get_cart_total
             user = order.user
             if amount_paid < amount_payable:
                 # You made an invalid payment
                 EmailUtil.send_payment_failed_email(
-                    request, user.full_name, user.email, amount_paid
+                    user.full_name, user.email, amount_paid
                 )
                 order.payment_status = "FAILED"
                 order.save()
@@ -823,7 +878,7 @@ def paystack_webhook(request):
             update_product_in_stock(order.orderitems.all())
             # Send email
             EmailUtil.send_payment_success_email(
-                request, user.full_name, user.email, amount_payable
+                user.full_name, user.email, amount_payable
             )
         else:
             return HttpResponse(status=200)
@@ -885,7 +940,7 @@ def paypal_webhook(request):
                 if amount_paid < amount_payable:
                     # You made an invalid payment
                     EmailUtil.send_payment_failed_email(
-                        request, user.full_name, user.email, amount_paid
+                        user.full_name, user.email, amount_paid
                     )
                     order.payment_status = "FAILED"
                     order.save()
@@ -897,7 +952,7 @@ def paypal_webhook(request):
                 update_product_in_stock(order.orderitems.all())
                 # Send email
                 EmailUtil.send_payment_success_email(
-                    request, user.full_name, user.email, amount_payable
+                    user.full_name, user.email, amount_payable
                 )
         return HttpResponse(status=200)
     else:

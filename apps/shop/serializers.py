@@ -149,12 +149,26 @@ class CheckoutSerializer(serializers.Serializer):
 
 class OrderSerializer(serializers.Serializer):
     tx_ref = serializers.CharField()
+    first_name = serializers.CharField(source="user.first_name")
+    last_name = serializers.CharField(source="user.last_name")
+    email = serializers.EmailField(source="user.email")
     delivery_status = serializers.CharField()
     payment_status = serializers.CharField()
     payment_method = serializers.CharField()
     coupon = serializers.CharField(source="coupon.code", required=False)
     date_delivered = serializers.DateTimeField()
     shipping_details = serializers.SerializerMethodField()
+    subtotal = serializers.DecimalField(
+        max_digits=100, decimal_places=2, source="get_cart_subtotal"
+    )
+    shipping_fee = serializers.DecimalField(max_digits=100, decimal_places=2)
+    total = serializers.DecimalField(
+        max_digits=100, decimal_places=2, source="get_cart_total"
+    )
 
     def get_shipping_details(self, obj):
         return ShippingAddressSerializer(obj).data
+
+
+class OrdersResponseDataSerializer(PaginatedResponseDataSerializer):
+    orders = OrderSerializer(many=True, source="items")

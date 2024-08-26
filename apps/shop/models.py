@@ -338,7 +338,7 @@ class Order(IsDeletedModel):
 
     @property
     def shipping_fee(self):
-        return settings.SHIPPING_FEE * self.orderitems.count()
+        return settings.SHIPPING_FEE * len(self.orderitems.all())
 
     @property
     def get_cart_total(self):

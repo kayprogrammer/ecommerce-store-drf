@@ -98,6 +98,7 @@ class CustomSwaggerView(SpectacularSwaggerView):
             {
                 "google_client_id": settings.GOOGLE_CLIENT_ID,
                 "facebook_app_id": settings.FACEBOOK_APP_ID,
+                "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
             }
         )
         return Response(context, template_name=self.template_name)

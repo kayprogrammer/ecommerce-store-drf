@@ -299,13 +299,20 @@ FULL_SHIPPING_DETAILS_EXAMPLE = {"id": UUID_EXAMPLE} | SHIPPING_DETAILS_EXAMPLE
 
 ORDER_DATA_EXAMPLE = {
     "tx_ref": "JSDJASFHSDFHG",
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "johndoe@email.com",
     "delivery_status": "PENDING",
     "payment_status": "PENDING",
     "payment_method": "PAYSTACK",
     "coupon": "SADJSDJJS",
     "date_delivered": DATETIME_EXAMPLE,
     "shipping_details": SHIPPING_DETAILS_EXAMPLE,
+    "subtotal": "10000.00",
+    "shipping_fee": "10.00",
+    "total": "10010.00",
 }
+
 CHECKOUT_RESPONSE_EXAMPLE = {
     200: OpenApiResponse(
         response=RESPONSE_TYPE,
@@ -479,5 +486,40 @@ SHIPPING_ADDRESS_DELETE_RESPONSE_EXAMPLE = {
         ],
     ),
     404: non_existent_response_example("Shipping Address"),
+    401: UNAUTHORIZED_USER_RESPONSE,
+}
+
+ORDERS_PARAM_EXAMPLE = [
+    OpenApiParameter(
+        name="payment_status",
+        description="Filter products by payment status",
+        required=False,
+        type=OpenApiTypes.STR,
+    ),
+    OpenApiParameter(
+        name="delivery_status",
+        description="Filter products by delivery status",
+        required=False,
+        type=OpenApiTypes.STR,
+    ),
+    *page_parameter_example("orders", 100),
+]
+
+ORDERS_RESPONSE_EXAMPLE = {
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Orders Fetched",
+        examples=[
+            OpenApiExample(
+                name="Success Response",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Orders Fetched Successfully",
+                    "data": PAGINATED_RESPONSE_EXAMPLE
+                    | {"orders": [ORDER_DATA_EXAMPLE]},
+                },
+            )
+        ],
+    ),
     401: UNAUTHORIZED_USER_RESPONSE,
 }
