@@ -12,6 +12,12 @@ def get_user(bearer):
             err_msg="Access Token is Invalid or Expired!",
             status_code=401,
         )
+    if not user.is_active:
+        raise RequestError(
+            err_code=ErrorCode.DEACTIVATED_ACCOUNT,
+            err_msg="This account has been deactivated!",
+            status_code=401,
+        )
     return user
 
 

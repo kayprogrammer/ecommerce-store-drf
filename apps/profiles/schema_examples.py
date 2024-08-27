@@ -56,3 +56,20 @@ PROFILE_UPDATE_RESPONSE_EXAMPLE = {
     401: UNAUTHORIZED_USER_RESPONSE,
     422: UNPROCESSABLE_ENTITY_EXAMPLE,
 }
+
+ACCOUNT_DEACTIVATION_RESPONSE_EXAMPLE = {
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="User Account Deactivated",
+        examples=[
+            OpenApiExample(
+                name="Success response",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "User Account Deactivated",
+                },
+            ),
+        ],
+    ),
+    401: UNAUTHORIZED_USER_RESPONSE,
+}

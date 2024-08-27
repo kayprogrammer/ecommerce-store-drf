@@ -3,6 +3,7 @@ from drf_spectacular.utils import extend_schema
 from apps.common.permissions import IsAuthenticatedCustom, set_dict_attr
 from apps.common.responses import CustomResponse
 from apps.profiles.schema_examples import (
+    ACCOUNT_DEACTIVATION_RESPONSE_EXAMPLE,
     PROFILE_RESPONSE_EXAMPLE,
     PROFILE_UPDATE_RESPONSE_EXAMPLE,
 )
@@ -64,3 +65,17 @@ class ProfileView(APIView):
         return CustomResponse.success(
             message="User Profile Updated", data=serializer.data
         )
+
+    @extend_schema(
+        summary="Deactivate account",
+        description="""
+            This endpoint allows a user to deactivate his/her account.
+        """,
+        tags=tags,
+        responses=ACCOUNT_DEACTIVATION_RESPONSE_EXAMPLE,
+    )
+    async def delete(self, request):
+        user = request.user
+        user.is_active = False
+        await user.asave()
+        return CustomResponse.success(message="User Account Deactivated")

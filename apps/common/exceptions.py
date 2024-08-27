@@ -33,6 +33,7 @@ class ErrorCode:
     INVALID_DATA_TYPE = "invalid_data_type"
     INVALID_CLIENT_ID = "invalid_client_id"
     USED_COUPON = "used_coupon"
+    DEACTIVATED_ACCOUNT = "deactivated_account"
 
 
 class RequestError(APIException):
