@@ -17,7 +17,10 @@ class BaseModelAdmin(admin.ModelAdmin):
         return super().get_queryset(request)
 
     def delete_model(self, request: HttpRequest, obj: Any) -> None:
-        obj.hard_delete()
+        try:
+            obj.hard_delete()
+        except:
+            obj.delete()
 
     def delete_queryset(self, request, queryset):
         try:

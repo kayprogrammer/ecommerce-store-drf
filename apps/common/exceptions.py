@@ -34,6 +34,8 @@ class ErrorCode:
     INVALID_CLIENT_ID = "invalid_client_id"
     USED_COUPON = "used_coupon"
     DEACTIVATED_ACCOUNT = "deactivated_account"
+    BUYERS_ONLY = "buyers_only"
+    SELLERS_ONLY = "sellers_only"
 
 
 class RequestError(APIException):

@@ -10,9 +10,6 @@ urlpatterns = [
     path("wishlist/<slug:slug>/", views.ToggleWishlistView.as_view()),
     path("cart/", views.CartView.as_view()),
     path("checkout/", views.CheckoutView.as_view()),
-    path("shipping_addresses/", views.ShippingAddressesView.as_view()),
-    path("shipping_addresses/<uuid:id>/", views.ShippingAddressView.as_view()),
-    path("orders/", views.OrdersView.as_view()),
     path("paystack-webhook/", views.paystack_webhook),
     path("paypal-webhook/", views.paypal_webhook),
 ]

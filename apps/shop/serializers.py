@@ -123,10 +123,6 @@ class ShippingAddressSerializer(serializers.Serializer):
         return representation
 
 
-class ShippingAddressSerializerWithID(ShippingAddressSerializer):
-    id = serializers.UUIDField(read_only=True)
-
-
 class CheckoutSerializer(serializers.Serializer):
     shipping_id = serializers.UUIDField(required=False)
     coupon = serializers.CharField(required=False)
@@ -168,7 +164,3 @@ class OrderSerializer(serializers.Serializer):
 
     def get_shipping_details(self, obj):
         return ShippingAddressSerializer(obj).data
-
-
-class OrdersResponseDataSerializer(PaginatedResponseDataSerializer):
-    orders = OrderSerializer(many=True, source="items")

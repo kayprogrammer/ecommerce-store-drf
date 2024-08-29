@@ -21,20 +21,23 @@ def get_user(bearer):
     return user
 
 
+def get_auth(request):
+    http_auth = request.META.get("HTTP_AUTHORIZATION")
+    if not http_auth:
+        raise RequestError(
+            err_code=ErrorCode.INVALID_AUTH,
+            err_msg="Auth Bearer not provided!",
+            status_code=401,
+        )
+    user = get_user(http_auth)
+    return user
+
+
 class IsAuthenticatedCustom(BasePermission):
     def has_permission(self, request, view):
-        http_auth = request.META.get("HTTP_AUTHORIZATION")
-        if not http_auth:
-            raise RequestError(
-                err_code=ErrorCode.INVALID_AUTH,
-                err_msg="Auth Bearer not provided!",
-                status_code=401,
-            )
-        user = get_user(http_auth)
+        user = get_auth(request)
         request.user = user
-        if request.user and request.user.is_authenticated:
-            return True
-        return False
+        return True
 
 
 class IsAuthenticatedOrGuestCustom(BasePermission):
@@ -52,7 +55,27 @@ class IsAuthenticatedOrGuestCustom(BasePermission):
         return True
 
 
-def set_dict_attr(obj, data):
-    for attr, value in data.items():
-        setattr(obj, attr, value)
-    return obj
+class IsAuthenticatedBuyerCustom(BasePermission):
+    def has_permission(self, request, view):
+        user = get_auth(request)
+        if user.account_type != "BUYER":
+            raise RequestError(
+                err_code=ErrorCode.BUYERS_ONLY,
+                err_msg="This action is for buyers only!",
+                status_code=401,
+            )
+        request.user = user
+        return True
+
+
+class IsAuthenticatedSellerCustom(BasePermission):
+    def has_permission(self, request, view):
+        user = get_auth(request)
+        if user.account_type != "SELLER":
+            raise RequestError(
+                err_code=ErrorCode.SELLERS_ONLY,
+                err_msg="This action is for sellers only!",
+                status_code=401,
+            )
+        request.user = user
+        return True

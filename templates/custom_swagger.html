@@ -90,6 +90,7 @@
                         SwaggerUIStandalonePreset
                     ],
                     layout: "StandaloneLayout",
+                    // tryItOutEnabled: true,
                     requestInterceptor: (request) => {
                         // Attach the CSRF token to the request
                         request.headers['X-CSRFToken'] = '{{ csrf_token }}';
