@@ -77,6 +77,32 @@ class Category(BaseModel):
         verbose_name_plural = "Categories"
 
 
+class Country(BaseModel):
+    """
+    Represents a country with its associated details.
+
+    Attributes:
+        name (str): The name of the country, unique for each instance.
+        code (str): The country code, unique for each instance.
+        phone_code (str): The international phone code for the country.
+
+    Methods:
+        __str__():
+            Returns the string representation of the country name.
+    """
+
+    name = models.CharField(max_length=200, unique=True)
+    code = models.CharField(max_length=20, unique=True)
+    phone_code = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name_plural = "Countries"
+
+
 class Product(IsDeletedModel):
     """
     Represents a product listed for sale.
@@ -109,7 +135,7 @@ class Product(IsDeletedModel):
     """
 
     seller = models.ForeignKey(
-        User, on_delete=models.SET_NULL, related_name="products", null=True
+        "sellers.Seller", on_delete=models.SET_NULL, related_name="products", null=True
     )
     name = models.CharField(max_length=100)
     slug = AutoSlugField(populate_from="name", unique=True, always_update=True)
@@ -187,32 +213,6 @@ class Wishlist(BaseModel):
                 name="unique_guest_product_wishlist_item",
             ),
         ]
-
-
-class Country(BaseModel):
-    """
-    Represents a country with its associated details.
-
-    Attributes:
-        name (str): The name of the country, unique for each instance.
-        code (str): The country code, unique for each instance.
-        phone_code (str): The international phone code for the country.
-
-    Methods:
-        __str__():
-            Returns the string representation of the country name.
-    """
-
-    name = models.CharField(max_length=200, unique=True)
-    code = models.CharField(max_length=20, unique=True)
-    phone_code = models.CharField(max_length=20)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ["name"]
-        verbose_name_plural = "Countries"
 
 
 class ShippingAddress(BaseModel):

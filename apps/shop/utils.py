@@ -33,7 +33,7 @@ def color_size_filter_products(products_original, sizes, colors):
 async def fetch_products(request, user, guest, extra_filter: Dict = None):
     name_filter = request.GET.get("name")
     products = (
-        Product.objects.select_related("category", "seller")
+        Product.objects.select_related("category", "seller", "seller__user")
         .prefetch_related("sizes", "colors")
         .annotate(**REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION(user, guest))
         .filter(in_stock__gt=0)

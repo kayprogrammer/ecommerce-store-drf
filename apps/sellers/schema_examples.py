@@ -1,15 +1,19 @@
+from apps.accounts.schema_examples import UNAUTHORIZED_USER_RESPONSE
 from apps.common.exceptions import ErrorCode
 from apps.common.schema_examples import (
     DATETIME_EXAMPLE,
     ERR_RESPONSE_STATUS,
+    PAGINATED_RESPONSE_EXAMPLE,
     RESPONSE_TYPE,
     SUCCESS_RESPONSE_STATUS,
     UNPROCESSABLE_ENTITY_EXAMPLE,
     generate_field_properties_for_swagger,
+    non_existent_response_example,
 )
 from drf_spectacular.utils import OpenApiResponse, OpenApiExample
 
-from apps.sellers.serializers import SellerApplicationSerializer
+from apps.sellers.serializers import SellerSerializer
+from apps.shop.schema_examples import PRODUCT_EXAMPLE
 
 UNAUTHORIZED_BUYER_RESPONSE = OpenApiResponse(
     response=RESPONSE_TYPE,
@@ -88,7 +92,7 @@ SELLER_APPLICATION_DATA_EXAMPLE = {
     "city": "New York",
     "state_province": "NY",
     "postal_code": "10001",
-    "country": "USA",
+    "country": "United States",
     "bank_name": "Example Bank",
     "bank_account_number": "987654321",
     "bank_routing_number": "111000025",
@@ -104,19 +108,19 @@ SELLER_APPLICATION_DATA_EXAMPLE = {
 }
 
 SELLER_APPLICATION_RESPONSE_DATA_EXAMPLE = SELLER_APPLICATION_DATA_EXAMPLE | {
+    "slug": "jones-clothing",
     "is_approved": False,
     "application_date": DATETIME_EXAMPLE,
 }
 
 
-properties, required_fields = generate_field_properties_for_swagger(
-    SellerApplicationSerializer(), SELLER_APPLICATION_DATA_EXAMPLE
+properties = generate_field_properties_for_swagger(
+    SellerSerializer(), SELLER_APPLICATION_DATA_EXAMPLE
 )
 SELLER_APPLICATION_REQUEST_EXAMPLE = {
     "multipart/form-data": {
         "type": "object",
         "properties": properties,
-        "required": required_fields,
     }
 }
 
@@ -137,4 +141,24 @@ SELLER_APPLICATION_RESPONSE_EXAMPLE = {
     ),
     401: UNAUTHORIZED_BUYER_RESPONSE,
     422: UNPROCESSABLE_ENTITY_EXAMPLE,
+}
+
+SELLER_PRODUCTS_RESPONSE = {
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Products Fetched. guest_id will only show for guest users",
+        examples=[
+            OpenApiExample(
+                name="Success Response",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Products Fetched Successfully",
+                    "data": PAGINATED_RESPONSE_EXAMPLE
+                    | {"products": [PRODUCT_EXAMPLE]},
+                },
+            )
+        ],
+    ),
+    401: UNAUTHORIZED_USER_RESPONSE,
+    404: non_existent_response_example("Seller"),
 }

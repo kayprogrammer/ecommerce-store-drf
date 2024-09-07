@@ -6,7 +6,7 @@ from apps.sellers.choices import (
 from apps.shop.validators import PHONE_REGEX_VALIDATOR
 
 
-class SellerApplicationSerializer(serializers.Serializer):
+class SellerSerializer(serializers.Serializer):
     full_name = serializers.CharField(max_length=255)
     email = serializers.EmailField()
     phone_number = serializers.CharField(
@@ -15,6 +15,7 @@ class SellerApplicationSerializer(serializers.Serializer):
     date_of_birth = serializers.DateField(required=False, allow_null=True)
 
     business_name = serializers.CharField(max_length=255)
+    slug = serializers.CharField(read_only=True)
     business_type = serializers.ChoiceField(choices=BUSINESS_TYPE_CHOICES)
     business_registration_number = serializers.CharField(max_length=50)
     tax_identification_number = serializers.CharField(max_length=50)
@@ -32,8 +33,8 @@ class SellerApplicationSerializer(serializers.Serializer):
     bank_routing_number = serializers.CharField(max_length=50)
     account_holder_name = serializers.CharField(max_length=255)
 
-    government_id = serializers.FileField(required=False)
-    proof_of_address = serializers.FileField(required=False)
+    government_id = serializers.FileField()
+    proof_of_address = serializers.FileField()
     business_license = serializers.FileField(required=False, allow_null=True)
 
     product_categories = serializers.ListField(

@@ -1,3 +1,4 @@
+from autoslug import AutoSlugField
 from django.db import models
 
 from apps.accounts.models import User
@@ -9,11 +10,9 @@ from apps.sellers.choices import (
 from apps.shop.models import Category, Country
 
 
-class SellerApplication(BaseModel):
+class Seller(BaseModel):
     # Link to the User model
-    user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name="seller_application"
-    )
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="seller")
 
     # Personal Information
     full_name = models.CharField(max_length=255)
@@ -23,6 +22,7 @@ class SellerApplication(BaseModel):
 
     # Business Information
     business_name = models.CharField(max_length=255)
+    slug = AutoSlugField(populate_from="business_name", always_update=True, null=True)
     business_type = models.CharField(max_length=50, choices=BUSINESS_TYPE_CHOICES)
     business_registration_number = models.CharField(max_length=50)
     tax_identification_number = models.CharField(max_length=50)
@@ -43,12 +43,10 @@ class SellerApplication(BaseModel):
     account_holder_name = models.CharField(max_length=255)
 
     # Identity Verification
-    government_id = models.FileField(upload_to="seller_applications/government_ids/")
-    proof_of_address = models.FileField(
-        upload_to="seller_applications/proof_of_address/"
-    )
+    government_id = models.FileField(upload_to="sellers/government_ids/")
+    proof_of_address = models.FileField(upload_to="sellers/proof_of_address/")
     business_license = models.FileField(
-        upload_to="seller_applications/business_licenses/", null=True, blank=True
+        upload_to="sellers/business_licenses/", null=True, blank=True
     )
 
     # Product Information
@@ -68,4 +66,4 @@ class SellerApplication(BaseModel):
     is_approved = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Seller Application for {self.business_name} by {self.full_name}"
+        return f"Seller for {self.business_name} by {self.full_name}"

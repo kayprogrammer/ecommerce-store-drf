@@ -83,6 +83,7 @@ FIELD_TYPE_MAP = {
     fields.DateTimeField: OpenApiTypes.DATETIME,
     fields.URLField: OpenApiTypes.URI,
     fields.FileField: OpenApiTypes.BINARY,
+    fields.ImageField: OpenApiTypes.BINARY,
     fields.DictField: OpenApiTypes.OBJECT,
 }
 
@@ -91,7 +92,6 @@ def generate_field_properties_for_swagger(
     serializer_class: serializers.Serializer, example_data
 ):
     field_properties = {}
-    required_fields = []
     for field_name, value in example_data.items():
         field_class = serializer_class.fields.get(field_name)
         field_property_data = {}
@@ -102,6 +102,4 @@ def generate_field_properties_for_swagger(
         else:
             field_property_data = build_basic_type(FIELD_TYPE_MAP[type(field_class)])
         field_properties[field_name] = field_property_data | {"example": value}
-        if field_class.required:
-            required_fields.append(field_name)
-    return field_properties, required_fields
+    return field_properties

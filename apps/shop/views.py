@@ -183,7 +183,7 @@ class ProductView(APIView):
         """
         user, guest = get_user_or_guest(request.user)
         product = await (
-            Product.objects.select_related("category", "seller")
+            Product.objects.select_related("category", "seller", "seller__user")
             .prefetch_related("sizes", "colors", "reviews", "reviews__user")
             .annotate(**REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION(user, guest))
             .aget_or_none(in_stock__gt=0, slug=kwargs["slug"])
@@ -418,7 +418,7 @@ class CartView(APIView):
         user, guest = get_user_or_guest(request.user)
         orderitems = await sync_to_async(list)(
             OrderItem.objects.filter(user=user, guest=guest, order=None).select_related(
-                "product", "product__seller", "size", "color"
+                "product", "product__seller", "product__seller__user", "size", "color"
             )
         )
         paginated_data = self.paginator_class.paginate_queryset(orderitems, request)

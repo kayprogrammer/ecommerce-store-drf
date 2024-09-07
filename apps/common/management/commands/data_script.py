@@ -9,10 +9,12 @@ from apps.common.management.commands.seed import (
     PRODUCT_CATEGORIES,
     PRODUCT_DATA,
     REVIEWS,
+    SELLER_DATA,
     SIZES_DATA,
     COLOUR_DATA,
 )
 
+from apps.sellers.models import Seller
 from apps.shop.choices import RATING_CHOICES
 from apps.shop.models import (
     CATEGORY_IMAGE_PREFIX,
@@ -35,13 +37,15 @@ test_product_images_directory = f"{test_images_directory}/products"
 
 class CreateData(object):
     def __init__(self) -> None:
-        admin = self.create_superuser()
-        reviewer = self.create_reviewer()
-        self.create_countries()
-        self.create_categories()
-        sizes, colors = self.create_sizes_and_colors()
-        products = self.create_products(admin, sizes, colors)
-        self.create_reviews(admin, reviewer, products)
+        with transaction.atomic():
+            admin = self.create_superuser()
+            reviewer = self.create_reviewer()
+            countries = self.create_countries()
+            categories = self.create_categories()
+            seller = self.create_seller(admin, countries, categories)
+            sizes, colors = self.create_sizes_and_colors()
+            products = self.create_products(seller, sizes, colors)
+            self.create_reviews(admin, reviewer, products)
 
     def create_superuser(self) -> User:
         user_dict = {
@@ -69,6 +73,13 @@ class CreateData(object):
             reviewer = User.objects.create_user(**user_dict)
         return reviewer
 
+    def create_seller(self, admin, countries, categories) -> Seller:
+        seller, _ = Seller.objects.get_or_create(
+            user=admin, country=countries[0], **SELLER_DATA
+        )
+        seller.product_categories.add(*categories[:3])
+        return seller
+
     def create_countries(self):
         if Country.objects.exists():
             return
@@ -80,14 +91,15 @@ class CreateData(object):
             )
             for country in COUNTRIES_DATA
         ]
-        Country.objects.bulk_create(country_instances)
+        countries = Country.objects.bulk_create(country_instances)
+        return countries
 
     def get_image(self, images_list, substring):
         return next((s for s in images_list if s.startswith(substring)), None)
 
     def create_categories(self):
-        categories_exists = Category.objects.exists()
-        if not categories_exists:
+        categories = Category.objects.all()
+        if not categories.exists():
             images = os.listdir(test_category_images_directory)
             categories_to_create = []
             for category_name in PRODUCT_CATEGORIES:
@@ -106,7 +118,8 @@ class CreateData(object):
                             name=category_name, slug=slug, image=file_path
                         )
                         categories_to_create.append(category)
-            Category.objects.bulk_create(categories_to_create)
+            categories = Category.objects.bulk_create(categories_to_create)
+        return categories
 
     def create_sizes_and_colors(self):
         sizes = Size.objects.all()
@@ -119,42 +132,41 @@ class CreateData(object):
             Color.objects.bulk_create(colors_to_create)
         return sizes, colors
 
-    def create_products(self, admin, sizes, colors):
+    def create_products(self, seller, sizes, colors):
         products = Product.objects.all()
         if not products.exists():
-            with transaction.atomic():
-                images = os.listdir(test_product_images_directory)
-                products_to_create = []
-                for idx, product_data in enumerate(PRODUCT_DATA):
-                    category_slug = product_data["category_slug"]
-                    category = Category.objects.get_or_none(slug=category_slug)
-                    if not category:
-                        pass
-                    image_file_name = self.get_image(images, category_slug)
-                    image_path = os.path.join(
-                        test_product_images_directory, image_file_name
+            images = os.listdir(test_product_images_directory)
+            products_to_create = []
+            for idx, product_data in enumerate(PRODUCT_DATA):
+                category_slug = product_data["category_slug"]
+                category = Category.objects.get_or_none(slug=category_slug)
+                if not category:
+                    pass
+                image_file_name = self.get_image(images, category_slug)
+                image_path = os.path.join(
+                    test_product_images_directory, image_file_name
+                )
+                with open(image_path, "rb") as image_file:
+                    file_storage = MediaCloudinaryStorage()
+                    file_path = file_storage.save(
+                        f"{PRODUCT_IMAGE_PREFIX}{image_file_name}", image_file
                     )
-                    with open(image_path, "rb") as image_file:
-                        file_storage = MediaCloudinaryStorage()
-                        file_path = file_storage.save(
-                            f"{PRODUCT_IMAGE_PREFIX}{image_file_name}", image_file
-                        )
-                        product = Product(
-                            seller=admin,
-                            name=product_data["name"],
-                            category=category,
-                            desc="This is a good product you'll never regret. It is of good quality",
-                            price_old=(idx + 1) * 5000,
-                            price_current=(idx + 1) * 4000,
-                            image1=file_path,
-                        )
-                        products_to_create.append(product)
-                products = Product.objects.bulk_create(products_to_create)
+                    product = Product(
+                        seller=seller,
+                        name=product_data["name"],
+                        category=category,
+                        desc="This is a good product you'll never regret. It is of good quality",
+                        price_old=(idx + 1) * 5000,
+                        price_current=(idx + 1) * 4000,
+                        image1=file_path,
+                    )
+                    products_to_create.append(product)
+            products = Product.objects.bulk_create(products_to_create)
 
-                # Product update sizes and colors
-                for product in products:
-                    product.sizes.set(sizes)
-                    product.colors.set(colors)
+            # Product update sizes and colors
+            for product in products:
+                product.sizes.set(sizes)
+                product.colors.set(colors)
         return products
 
     def create_reviews(self, admin: User, reviewer: User, products: List[Product]):

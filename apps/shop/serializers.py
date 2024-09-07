@@ -13,6 +13,12 @@ class UserSerializer(serializers.Serializer):
     avatar = serializers.CharField(source="avatar_url")
 
 
+class SellerSerializer(serializers.Serializer):
+    name = serializers.CharField(source="business_name")
+    slug = serializers.CharField()
+    avatar = serializers.CharField(source="user.avatar_url")
+
+
 class CategorySerializer(serializers.Serializer):
     name = serializers.CharField()
     slug = serializers.SlugField()
@@ -20,7 +26,7 @@ class CategorySerializer(serializers.Serializer):
 
 
 class ProductSerializer(serializers.Serializer):
-    seller = UserSerializer()
+    seller = SellerSerializer()
     name = serializers.CharField()
     slug = serializers.SlugField()
     desc = serializers.CharField()
