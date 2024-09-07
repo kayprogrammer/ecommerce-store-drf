@@ -138,9 +138,9 @@ class Product(IsDeletedModel):
         "sellers.Seller", on_delete=models.SET_NULL, related_name="products", null=True
     )
     name = models.CharField(max_length=100)
-    slug = AutoSlugField(populate_from="name", unique=True, always_update=True)
+    slug = AutoSlugField(populate_from="name", unique=True, db_index=True)
     desc = models.TextField()
-    price_old = models.DecimalField(max_digits=10, decimal_places=2)
+    price_old = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     price_current = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="products"

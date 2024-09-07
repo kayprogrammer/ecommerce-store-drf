@@ -7,20 +7,23 @@ from apps.common.paginators import CustomPagination
 from apps.common.permissions import (
     IsAuthenticatedBuyerCustom,
     IsAuthenticatedOrGuestCustom,
+    IsAuthenticatedSellerCustom,
 )
 from apps.common.responses import CustomResponse
 from apps.common.utils import get_user_or_guest, validate_request_data
 from apps.shop.schema_examples import PRODUCTS_PARAM_EXAMPLE
-from apps.shop.serializers import ProductsResponseDataSerializer
+from apps.shop.serializers import ProductSerializer, ProductsResponseDataSerializer
 from apps.shop.utils import fetch_products
 from .models import Seller
 from .schema_examples import (
+    PRODUCT_CREATE_REQUEST_EXAMPLE,
+    PRODUCT_CREATE_RESPONSE_EXAMPLE,
     SELLER_APPLICATION_REQUEST_EXAMPLE,
     SELLER_APPLICATION_RESPONSE_EXAMPLE,
     SELLER_PRODUCTS_RESPONSE,
 )
-from .serializers import SellerSerializer
-from apps.shop.models import Category, Country
+from .serializers import ProductCreateSerializer, SellerSerializer
+from apps.shop.models import Category, Color, Country, Product, Size
 from asgiref.sync import sync_to_async
 
 tags = ["Sellers"]
@@ -32,7 +35,7 @@ class SellersApplicationView(APIView):
 
     Attributes:
         serializer_class (SellerSerializer): The serializer class used to validate and serialize profile data.
-        permission_classes (tuple): Permissions required to access this view, in this case, custom authentication.
+        permission_classes (IsAuthenticatedBuyerCustom): Permissions required to access this view, in this case, buyers only.
     """
 
     serializer_class_ = SellerSerializer
@@ -101,4 +104,58 @@ class ProductsBySellerView(APIView):
         serializer = self.serializer_class(paginated_data)
         return CustomResponse.success(
             message="Seller Products Fetched Successfully", data=serializer.data
+        )
+
+
+class ProductCreateView(APIView):
+    """
+    A asynchronous view to handle the creation of products.
+
+    Attributes:
+        serializer_class (ProductCreateSerializer): The serializer class used to validate and serialize profile data.
+        permission_classes (IsAuthenticatedSellerCustom): Permissions required to access this view, in this case, seller permissions.
+    """
+
+    serialier_class = ProductCreateSerializer
+    serialier_resp_class = ProductSerializer
+    permission_classes = (IsAuthenticatedSellerCustom,)
+
+    @extend_schema(
+        summary="Create a product",
+        description="""
+            This endpoint allows a seller to create a product.
+        """,
+        tags=tags,
+        request=PRODUCT_CREATE_REQUEST_EXAMPLE,
+        responses=PRODUCT_CREATE_RESPONSE_EXAMPLE,
+    )
+    @aatomic
+    async def post(self, request):
+        user = request.user
+        data = validate_request_data(request, self.serialier_class)
+        # Validate category, sizes and colors
+        category_slug = data.pop("category_slug")
+        category = await Category.objects.aget_or_none(slug=category_slug)
+        if not category:
+            raise ValidationErr("category_slug", "Invalid category")
+        sizes = data.pop("sizes")
+        sizes = await sync_to_async(list)(Size.objects.filter(value__in=sizes))
+        if len(sizes) < 1:
+            raise ValidationErr("sizes", "Enter at least one valid size")
+        colors = data.pop("colors")
+        colors = await sync_to_async(list)(Color.objects.filter(value__in=colors))
+        if len(colors) < 1:
+            raise ValidationErr("colors", "Enter at least one valid color")
+        product = await Product.objects.acreate(
+            seller=user.seller, category=category, **data
+        )
+        product.sizes_ = sizes
+        product.colors_ = colors
+        await product.sizes.aadd(*sizes)
+        await product.colors.aadd(*colors)
+        serializer = self.serialier_resp_class(product)
+        return CustomResponse.success(
+            message="Product created successfully",
+            data=serializer.data,
+            status_code=201,
         )

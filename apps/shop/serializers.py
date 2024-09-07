@@ -35,18 +35,20 @@ class ProductSerializer(serializers.Serializer):
     category = CategorySerializer()
     sizes = serializers.SerializerMethodField()
     colors = serializers.SerializerMethodField()
-    reviews_count = serializers.IntegerField()
-    avg_rating = serializers.FloatField()
-    wishlisted = serializers.BooleanField()
+    reviews_count = serializers.IntegerField(default=0)
+    avg_rating = serializers.FloatField(default=0)
+    wishlisted = serializers.BooleanField(default=False)
     image1 = serializers.CharField(source="image1_url")
     image2 = serializers.CharField(source="image2_url")
     image3 = serializers.CharField(source="image3_url")
 
     def get_sizes(self, obj: Product):
-        return [size.value for size in obj.sizes.all()]
+        sizes = obj.sizes_ or obj.sizes.all()
+        return [size.value for size in sizes]
 
     def get_colors(self, obj: Product):
-        return [color.value for color in obj.colors.all()]
+        colors = obj.colors_ or obj.colors.all()
+        return [color.value for color in colors]
 
 
 class ProductsResponseDataSerializer(PaginatedResponseDataSerializer):

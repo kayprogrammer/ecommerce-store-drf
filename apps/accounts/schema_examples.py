@@ -124,3 +124,42 @@ AUTH_LOGOUT_RESPONSE = {
     ),
     401: UNAUTHORIZED_USER_RESPONSE,
 }
+
+
+UNAUTHORIZED_USER_OR_GUEST_RESPONSE = OpenApiResponse(
+    response=UNAUTHORIZED_USER_RESPONSE.response,
+    description="Invalid Access Token",
+    examples=[UNAUTHORIZED_USER_RESPONSE.examples[1]],
+)
+
+UNAUTHORIZED_BUYER_RESPONSE = OpenApiResponse(
+    response=UNAUTHORIZED_USER_RESPONSE.response,
+    description="Invalid User",
+    examples=UNAUTHORIZED_USER_RESPONSE.examples
+    + [
+        OpenApiExample(
+            name="Invalid User",
+            value={
+                "status": ERR_RESPONSE_STATUS,
+                "code": ErrorCode.BUYERS_ONLY,
+                "message": "This action is for buyers only!",
+            },
+        )
+    ],
+)
+
+UNAUTHORIZED_SELLER_RESPONSE = OpenApiResponse(
+    response=UNAUTHORIZED_USER_RESPONSE.response,
+    description="Invalid User",
+    examples=UNAUTHORIZED_USER_RESPONSE.examples
+    + [
+        OpenApiExample(
+            name="Invalid User",
+            value={
+                "status": ERR_RESPONSE_STATUS,
+                "code": ErrorCode.SELLERS_ONLY,
+                "message": "This action is for SELLERS only!",
+            },
+        )
+    ],
+)

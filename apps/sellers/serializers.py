@@ -65,3 +65,30 @@ class SellerSerializer(serializers.Serializer):
         if len(product_categories) == 1 and "," in product_categories[0]:
             data["product_categories"]["name"] = product_categories[0].split(",")
         return data
+
+
+class ProductCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=100)
+    desc = serializers.CharField()
+    price_current = serializers.DecimalField(max_digits=10, decimal_places=2)
+    category_slug = serializers.CharField(max_length=200)
+    sizes = serializers.ListField(child=serializers.CharField(max_length=5))
+    colors = serializers.ListField(child=serializers.CharField(max_length=20))
+    in_stock = serializers.IntegerField()
+    image1 = serializers.ImageField()
+    image2 = serializers.ImageField(required=False)
+    image3 = serializers.ImageField(required=False)
+
+    @property
+    def validated_data(self):
+        data = super().validated_data
+        sizes = data["sizes"]
+        colors = data["colors"]
+
+        # This is for fixing a swagger issue. It returns list items as ['Cars,Shoes'] instead of ['Cars', 'Shoes']
+        # A normal consuming of the api won't have such problem
+        if len(sizes) == 1 and "," in sizes[0]:
+            data["sizes"] = sizes[0].split(",")
+        if len(colors) == 1 and "," in colors[0]:
+            data["colors"] = colors[0].split(",")
+        return data

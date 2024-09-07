@@ -1,4 +1,7 @@
-from apps.accounts.schema_examples import UNAUTHORIZED_USER_RESPONSE
+from apps.accounts.schema_examples import (
+    UNAUTHORIZED_BUYER_RESPONSE,
+    UNAUTHORIZED_USER_RESPONSE,
+)
 from apps.common.exceptions import ErrorCode
 from apps.common.schema_examples import (
     DATETIME_EXAMPLE,
@@ -12,39 +15,8 @@ from apps.common.schema_examples import (
 )
 from drf_spectacular.utils import OpenApiResponse, OpenApiExample
 
-from apps.sellers.serializers import SellerSerializer
+from apps.sellers.serializers import ProductCreateSerializer, SellerSerializer
 from apps.shop.schema_examples import PRODUCT_EXAMPLE
-
-UNAUTHORIZED_BUYER_RESPONSE = OpenApiResponse(
-    response=RESPONSE_TYPE,
-    description="Unauthorized User or Invalid Access Token or Invalid User",
-    examples=[
-        OpenApiExample(
-            name="Unauthorized User",
-            value={
-                "status": ERR_RESPONSE_STATUS,
-                "code": ErrorCode.INVALID_AUTH,
-                "message": "Auth Bearer not provided!",
-            },
-        ),
-        OpenApiExample(
-            name="Invalid Access Token",
-            value={
-                "status": ERR_RESPONSE_STATUS,
-                "code": ErrorCode.INVALID_TOKEN,
-                "message": "Access Token is Invalid or Expired!",
-            },
-        ),
-        OpenApiExample(
-            name="Invalid User",
-            value={
-                "status": ERR_RESPONSE_STATUS,
-                "code": ErrorCode.BUYERS_ONLY,
-                "message": "This action is for buyers only!",
-            },
-        ),
-    ],
-)
 
 UNAUTHORIZED_SELLER_RESPONSE = OpenApiResponse(
     response=RESPONSE_TYPE,
@@ -161,4 +133,46 @@ SELLER_PRODUCTS_RESPONSE = {
     ),
     401: UNAUTHORIZED_USER_RESPONSE,
     404: non_existent_response_example("Seller"),
+}
+
+PRODUCT_CREATE_EXAMPLE = {
+    "name": "Black Trousers for men",
+    "desc": "This is a product you must buy by force",
+    "price_current": "10000.00",
+    "category_slug": "clothing",
+    "sizes": ["S", "M"],
+    "colors": ["Black", "White"],
+    "in_stock": 50,
+    "image1": "https://good-looking-image.com",
+    "image2": "https://good-looking-image.com",
+    "image3": "https://good-looking-image.com",
+}
+
+properties = generate_field_properties_for_swagger(
+    ProductCreateSerializer(), PRODUCT_CREATE_EXAMPLE
+)
+PRODUCT_CREATE_REQUEST_EXAMPLE = {
+    "multipart/form-data": {
+        "type": "object",
+        "properties": properties,
+    }
+}
+
+PRODUCT_CREATE_RESPONSE_EXAMPLE = {
+    201: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Product created.",
+        examples=[
+            OpenApiExample(
+                name="Success Response",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Product created successfully",
+                    "data": PRODUCT_EXAMPLE,
+                },
+            )
+        ],
+    ),
+    401: UNAUTHORIZED_SELLER_RESPONSE,
+    422: UNPROCESSABLE_ENTITY_EXAMPLE,
 }

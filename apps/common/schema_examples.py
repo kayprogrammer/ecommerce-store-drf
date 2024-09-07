@@ -85,6 +85,7 @@ FIELD_TYPE_MAP = {
     fields.FileField: OpenApiTypes.BINARY,
     fields.ImageField: OpenApiTypes.BINARY,
     fields.DictField: OpenApiTypes.OBJECT,
+    fields.DecimalField: OpenApiTypes.DECIMAL,
 }
 
 

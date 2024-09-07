@@ -112,5 +112,7 @@ class Authentication:
         decoded = Authentication.decode_jwt(token)
         if not decoded:
             return None
-        user = User.objects.get_or_none(id=decoded["user_id"], access=token)
+        user = User.objects.select_related("seller").get_or_none(
+            id=decoded["user_id"], access=token
+        )
         return user

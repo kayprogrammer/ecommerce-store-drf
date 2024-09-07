@@ -4,7 +4,10 @@ from drf_spectacular.utils import (
     OpenApiParameter,
     OpenApiTypes,
 )
-from apps.accounts.schema_examples import UNAUTHORIZED_USER_RESPONSE
+from apps.accounts.schema_examples import (
+    UNAUTHORIZED_USER_OR_GUEST_RESPONSE,
+    UNAUTHORIZED_USER_RESPONSE,
+)
 from apps.common.exceptions import ErrorCode
 from apps.common.schema_examples import (
     DATETIME_EXAMPLE,
@@ -28,8 +31,14 @@ USER_EXAMPLE = {
     "avatar": "https://img.com/avatar/real-person",
 }
 
+SELLER_EXAMPLE = {
+    "name": "Real Person",
+    "slug": "real-person",
+    "avatar": "https://img.com/avatar/real-person",
+}
+
 PRODUCT_EXAMPLE = {
-    "seller": USER_EXAMPLE,
+    "seller": SELLER_EXAMPLE,
     "name": "Real Product",
     "slug": "real-product",
     "desc": "This is a good product. Buy am na",
@@ -61,7 +70,7 @@ PRODUCTS_RESPONSE = {
             )
         ],
     ),
-    401: UNAUTHORIZED_USER_RESPONSE,
+    401: UNAUTHORIZED_USER_OR_GUEST_RESPONSE,
 }
 
 
@@ -111,7 +120,7 @@ PRODUCT_RESPONSE = {
         ],
     ),
     404: PRODUCT_NON_EXISTENT_RESPONSE,
-    401: UNAUTHORIZED_USER_RESPONSE,
+    401: UNAUTHORIZED_USER_OR_GUEST_RESPONSE,
 }
 
 REVIEW_RESPONSE_EXAMPLE = {
@@ -202,14 +211,14 @@ WISHLIST_RESPONSE_EXAMPLE = {
         ],
     ),
     404: PRODUCT_NON_EXISTENT_RESPONSE,
-    401: UNAUTHORIZED_USER_RESPONSE,
+    401: UNAUTHORIZED_USER_OR_GUEST_RESPONSE,
 }
 
 CATEGORY_NON_EXISTENT_RESPONSE = non_existent_response_example("Category")
 
 PRODUCTS_BY_CATEGORY_RESPONSE_EXAMPLE = PRODUCTS_RESPONSE | {
     404: CATEGORY_NON_EXISTENT_RESPONSE,
-    401: UNAUTHORIZED_USER_RESPONSE,
+    401: UNAUTHORIZED_USER_OR_GUEST_RESPONSE,
 }
 
 ORDERITEM_DATA_EXAMPLE = {
@@ -241,7 +250,7 @@ CART_RESPONSE_EXAMPLE = {
             )
         ],
     ),
-    401: UNAUTHORIZED_USER_RESPONSE,
+    401: UNAUTHORIZED_USER_OR_GUEST_RESPONSE,
 }
 
 ORDERITEM_RESPONSE_EXAMPLE = {
@@ -280,7 +289,7 @@ ORDERITEM_RESPONSE_EXAMPLE = {
             ),
         ],
     ),
-    401: UNAUTHORIZED_USER_RESPONSE,
+    401: UNAUTHORIZED_USER_OR_GUEST_RESPONSE,
 }
 
 SHIPPING_DETAILS_EXAMPLE = {
