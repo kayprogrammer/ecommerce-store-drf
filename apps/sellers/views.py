@@ -105,6 +105,31 @@ class ProductsBySellerView(APIView):
         return CustomResponse.success(
             message="Seller Products Fetched Successfully", data=serializer.data
         )
+    
+    # @extend_schema(
+    #     summary="Seller Products Update",
+    #     description="""
+    #         This endpoint returns all products from a seller.
+    #         Products can be filtered by name, sizes or colors.
+    #     """,
+    #     tags=tags,
+    #     responses=SELLER_PRODUCTS_RESPONSE,
+    #     parameters=PRODUCTS_PARAM_EXAMPLE,
+    # )
+    # async def patch(self, request, *args, **kwargs):
+    #     product = await Product
+    #     user, guest = get_user_or_guest(request.user)
+    #     seller = await Seller.objects.aget_or_none(
+    #         slug=kwargs["slug"], is_approved=True
+    #     )
+    #     if not seller:
+    #         raise NotFoundError(err_msg="No approved seller with that slug")
+    #     products = await fetch_products(request, user, guest, {"seller": seller})
+    #     paginated_data = self.paginator_class.paginate_queryset(products, request)
+    #     serializer = self.serializer_class(paginated_data)
+    #     return CustomResponse.success(
+    #         message="Seller Products Fetched Successfully", data=serializer.data
+    #     )
 
 
 class ProductCreateView(APIView):
