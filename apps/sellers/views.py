@@ -1,6 +1,6 @@
 from adrf.views import APIView
 from drf_spectacular.utils import extend_schema
-
+from django.db.models import Prefetch
 from apps.common.decorators import aatomic
 from apps.common.exceptions import NotFoundError, ValidationErr
 from apps.common.paginators import CustomPagination
@@ -16,6 +16,8 @@ from apps.common.utils import (
     set_dict_attr,
     validate_request_data,
 )
+from apps.profiles.schema_examples import ORDERS_PARAM_EXAMPLE, ORDERS_RESPONSE_EXAMPLE
+from apps.profiles.serializers import OrdersResponseDataSerializer
 from apps.sellers.utils import validate_category_sizes_colors
 from apps.shop.schema_examples import PRODUCTS_PARAM_EXAMPLE
 from apps.shop.serializers import ProductSerializer, ProductsResponseDataSerializer
@@ -31,7 +33,7 @@ from .schema_examples import (
     SELLER_PRODUCTS_RESPONSE,
 )
 from .serializers import ProductCreateSerializer, SellerSerializer
-from apps.shop.models import Category, Color, Country, Product, Size
+from apps.shop.models import Category, Color, Country, Order, OrderItem, Product, Size
 from asgiref.sync import sync_to_async
 
 tags = ["Sellers"]
@@ -216,4 +218,58 @@ class ProductCreateView(APIView):
             message="Product created successfully",
             data=serializer.data,
             status_code=201,
+        )
+
+
+class OrdersView(APIView):
+    """
+    API view to fetch all orders attributed to a seller.
+
+    Methods:
+        get: Asynchronously fetches and returns all orders, with optional filtering by payment status, delivery status.
+    """
+
+    permission_classes = [IsAuthenticatedSellerCustom]
+    serializer_class = OrdersResponseDataSerializer
+    paginator_class = CustomPagination()
+
+    @extend_schema(
+        summary="Seller Orders Fetch",
+        description="""
+            This endpoint returns all orders for a particular seller.
+            Orders can be filtered by payment status or delivery status.
+        """,
+        tags=tags,
+        responses=ORDERS_RESPONSE_EXAMPLE,
+        parameters=ORDERS_PARAM_EXAMPLE,
+    )
+    async def get(self, request):
+        user = request.user
+        seller = user.seller
+        payment_status = request.GET.get("payment_status")
+        delivery_status = request.GET.get("delivery_status")
+        filter_ = {"orderitems__product__seller": seller}
+        if payment_status:
+            filter_["payment_status"] = payment_status
+        if delivery_status:
+            filter_["delivery_status"] = delivery_status
+
+        # Fetch orders with orderitems that is targeted towards the seller products
+        orders = await sync_to_async(list)(
+            Order.objects.filter(**filter_)
+            .select_related("user", "coupon")
+            .prefetch_related(
+                Prefetch(
+                    "orderitems",
+                    queryset=OrderItem.objects.filter(
+                        product__seller=seller
+                    ).select_related("product"),
+                )
+            )
+            .order_by("-created_at")
+        )
+        paginated_data = self.paginator_class.paginate_queryset(orders, request)
+        serializer = self.serializer_class(paginated_data)
+        return CustomResponse.success(
+            message="Orders Fetched Successfully", data=serializer.data
         )

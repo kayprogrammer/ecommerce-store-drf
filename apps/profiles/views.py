@@ -257,7 +257,7 @@ class OrdersView(APIView):
     API view to fetch all orders for a user.
 
     Methods:
-        get: Asynchronously fetches and returns all users, with optional filtering by payment status, delivery status.
+        get: Asynchronously fetches and returns all orders, with optional filtering by payment status, delivery status.
     """
 
     permission_classes = [IsAuthenticatedCustom]
