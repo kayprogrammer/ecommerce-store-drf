@@ -38,6 +38,7 @@ class ProductAdmin(BaseModelAdmin):
         "updated_at",
     )
     list_filter = list_display
+    readonly_fields = ("slug",)
 
 
 class CountryAdmin(BaseModelAdmin):

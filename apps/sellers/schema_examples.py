@@ -193,5 +193,24 @@ PRODUCT_UPDATE_RESPONSE_EXAMPLE = {
         ],
     ),
     401: UNAUTHORIZED_SELLER_RESPONSE,
+    404: non_existent_response_example("Product"),
     422: UNPROCESSABLE_ENTITY_EXAMPLE,
+}
+
+PRODUCT_DELETE_RESPONSE_EXAMPLE = {
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Product deleted.",
+        examples=[
+            OpenApiExample(
+                name="Success Response",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Product deleted successfully",
+                },
+            )
+        ],
+    ),
+    404: non_existent_response_example("Product"),
+    401: UNAUTHORIZED_SELLER_RESPONSE,
 }

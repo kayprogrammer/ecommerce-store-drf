@@ -24,6 +24,7 @@ from .models import Seller
 from .schema_examples import (
     PRODUCT_CREATE_REQUEST_EXAMPLE,
     PRODUCT_CREATE_RESPONSE_EXAMPLE,
+    PRODUCT_DELETE_RESPONSE_EXAMPLE,
     PRODUCT_UPDATE_RESPONSE_EXAMPLE,
     SELLER_APPLICATION_REQUEST_EXAMPLE,
     SELLER_APPLICATION_RESPONSE_EXAMPLE,
@@ -114,7 +115,7 @@ class ProductsBySellerView(APIView):
         )
 
     @extend_schema(
-        summary="Seller Products Update",
+        summary="Products Update",
         description="""
             This endpoint updates a seller product.
         """,
@@ -152,10 +153,29 @@ class ProductsBySellerView(APIView):
             message="Product Updated Successfully", data=serializer.data
         )
 
+    @extend_schema(
+        summary="Product Delete",
+        description="""
+            This endpoint allows a seller to delete a product.
+        """,
+        tags=tags,
+        responses=PRODUCT_DELETE_RESPONSE_EXAMPLE,
+    )
+    @aatomic
+    async def delete(self, request, *args, **kwargs):
+        user = request.user
+        product = await Product.objects.aget_or_none(
+            seller=user.seller, slug=kwargs["slug"]
+        )
+        if not product:
+            raise NotFoundError(err_msg="User owns no product with that slug")
+        await product.adelete()
+        return CustomResponse.success(message="Product Deleted Successfully")
+
     def get_permissions(self):
-        if self.request.method == "PATCH":
-            return [IsAuthenticatedSellerCustom()]
-        return [IsAuthenticatedOrGuestCustom()]
+        if self.request.method == "GET":
+            return [IsAuthenticatedOrGuestCustom()]
+        return [IsAuthenticatedSellerCustom()]
 
 
 class ProductCreateView(APIView):
