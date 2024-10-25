@@ -90,7 +90,7 @@ FIELD_TYPE_MAP = {
 
 
 def generate_field_properties_for_swagger(
-    serializer_class: serializers.Serializer, example_data
+    serializer_class: serializers.Serializer, example_data, required=True
 ):
     field_properties = {}
     for field_name, value in example_data.items():
@@ -102,5 +102,8 @@ def generate_field_properties_for_swagger(
             field_property_data = build_array_type(value)
         else:
             field_property_data = build_basic_type(FIELD_TYPE_MAP[type(field_class)])
-        field_properties[field_name] = field_property_data | {"example": value}
+        field_properties[field_name] = field_property_data | {
+            "example": value,
+            "required": required,
+        }
     return field_properties

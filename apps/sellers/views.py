@@ -10,7 +10,13 @@ from apps.common.permissions import (
     IsAuthenticatedSellerCustom,
 )
 from apps.common.responses import CustomResponse
-from apps.common.utils import get_user_or_guest, validate_request_data
+from apps.common.utils import (
+    REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION,
+    get_user_or_guest,
+    set_dict_attr,
+    validate_request_data,
+)
+from apps.sellers.utils import validate_category_sizes_colors
 from apps.shop.schema_examples import PRODUCTS_PARAM_EXAMPLE
 from apps.shop.serializers import ProductSerializer, ProductsResponseDataSerializer
 from apps.shop.utils import fetch_products
@@ -18,6 +24,7 @@ from .models import Seller
 from .schema_examples import (
     PRODUCT_CREATE_REQUEST_EXAMPLE,
     PRODUCT_CREATE_RESPONSE_EXAMPLE,
+    PRODUCT_UPDATE_RESPONSE_EXAMPLE,
     SELLER_APPLICATION_REQUEST_EXAMPLE,
     SELLER_APPLICATION_RESPONSE_EXAMPLE,
     SELLER_PRODUCTS_RESPONSE,
@@ -78,8 +85,8 @@ class SellersApplicationView(APIView):
 
 
 class ProductsBySellerView(APIView):
-    permission_classes = [IsAuthenticatedOrGuestCustom]
     serializer_class = ProductsResponseDataSerializer
+    serializer_entry_class = ProductCreateSerializer
     paginator_class = CustomPagination()
 
     @extend_schema(
@@ -105,31 +112,50 @@ class ProductsBySellerView(APIView):
         return CustomResponse.success(
             message="Seller Products Fetched Successfully", data=serializer.data
         )
-    
-    # @extend_schema(
-    #     summary="Seller Products Update",
-    #     description="""
-    #         This endpoint returns all products from a seller.
-    #         Products can be filtered by name, sizes or colors.
-    #     """,
-    #     tags=tags,
-    #     responses=SELLER_PRODUCTS_RESPONSE,
-    #     parameters=PRODUCTS_PARAM_EXAMPLE,
-    # )
-    # async def patch(self, request, *args, **kwargs):
-    #     product = await Product
-    #     user, guest = get_user_or_guest(request.user)
-    #     seller = await Seller.objects.aget_or_none(
-    #         slug=kwargs["slug"], is_approved=True
-    #     )
-    #     if not seller:
-    #         raise NotFoundError(err_msg="No approved seller with that slug")
-    #     products = await fetch_products(request, user, guest, {"seller": seller})
-    #     paginated_data = self.paginator_class.paginate_queryset(products, request)
-    #     serializer = self.serializer_class(paginated_data)
-    #     return CustomResponse.success(
-    #         message="Seller Products Fetched Successfully", data=serializer.data
-    #     )
+
+    @extend_schema(
+        summary="Seller Products Update",
+        description="""
+            This endpoint updates a seller product.
+        """,
+        tags=tags,
+        request=PRODUCT_CREATE_REQUEST_EXAMPLE,
+        responses=PRODUCT_UPDATE_RESPONSE_EXAMPLE,
+    )
+    @aatomic
+    async def patch(self, request, *args, **kwargs):
+        user = request.user
+        product = await Product.objects.aget_or_none(
+            seller=user.seller, slug=kwargs["slug"]
+        )
+        if not product:
+            raise NotFoundError(err_msg="User owns no product with that slug")
+        data = validate_request_data(request, self.serializer_entry_class, True)
+        data, sizes, colors = await validate_category_sizes_colors(data)
+
+        product = set_dict_attr(product, data)
+        await product.asave()
+
+        # Set sizes and colors
+        await product.sizes.aadd(*sizes)
+        await product.colors.aadd(*colors)
+
+        # Return refreshed product
+        product = await (
+            Product.objects.select_related("category", "seller", "seller__user")
+            .prefetch_related("sizes", "colors", "reviews", "reviews__user")
+            .annotate(**REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION(user, None))
+            .aget(id=product.id)
+        )
+        serializer = ProductSerializer(product)
+        return CustomResponse.success(
+            message="Product Updated Successfully", data=serializer.data
+        )
+
+    def get_permissions(self):
+        if self.request.method == "PATCH":
+            return [IsAuthenticatedSellerCustom()]
+        return [IsAuthenticatedOrGuestCustom()]
 
 
 class ProductCreateView(APIView):
@@ -159,21 +185,8 @@ class ProductCreateView(APIView):
         user = request.user
         data = validate_request_data(request, self.serialier_class)
         # Validate category, sizes and colors
-        category_slug = data.pop("category_slug")
-        category = await Category.objects.aget_or_none(slug=category_slug)
-        if not category:
-            raise ValidationErr("category_slug", "Invalid category")
-        sizes = data.pop("sizes")
-        sizes = await sync_to_async(list)(Size.objects.filter(value__in=sizes))
-        if len(sizes) < 1:
-            raise ValidationErr("sizes", "Enter at least one valid size")
-        colors = data.pop("colors")
-        colors = await sync_to_async(list)(Color.objects.filter(value__in=colors))
-        if len(colors) < 1:
-            raise ValidationErr("colors", "Enter at least one valid color")
-        product = await Product.objects.acreate(
-            seller=user.seller, category=category, **data
-        )
+        data, sizes, colors = await validate_category_sizes_colors(data)
+        product = await Product.objects.acreate(seller=user.seller, **data)
         product.sizes_ = sizes
         product.colors_ = colors
         await product.sizes.aadd(*sizes)

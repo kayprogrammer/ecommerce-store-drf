@@ -149,7 +149,7 @@ PRODUCT_CREATE_EXAMPLE = {
 }
 
 properties = generate_field_properties_for_swagger(
-    ProductCreateSerializer(), PRODUCT_CREATE_EXAMPLE
+    ProductCreateSerializer(), PRODUCT_CREATE_EXAMPLE, False
 )
 PRODUCT_CREATE_REQUEST_EXAMPLE = {
     "multipart/form-data": {
@@ -168,6 +168,25 @@ PRODUCT_CREATE_RESPONSE_EXAMPLE = {
                 value={
                     "status": SUCCESS_RESPONSE_STATUS,
                     "message": "Product created successfully",
+                    "data": PRODUCT_EXAMPLE,
+                },
+            )
+        ],
+    ),
+    401: UNAUTHORIZED_SELLER_RESPONSE,
+    422: UNPROCESSABLE_ENTITY_EXAMPLE,
+}
+
+PRODUCT_UPDATE_RESPONSE_EXAMPLE = {
+    200: OpenApiResponse(
+        response=RESPONSE_TYPE,
+        description="Product updated.",
+        examples=[
+            OpenApiExample(
+                name="Success Response",
+                value={
+                    "status": SUCCESS_RESPONSE_STATUS,
+                    "message": "Product updated successfully",
                     "data": PRODUCT_EXAMPLE,
                 },
             )

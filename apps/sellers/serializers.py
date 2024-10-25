@@ -92,3 +92,16 @@ class ProductCreateSerializer(serializers.Serializer):
         if len(colors) == 1 and "," in colors[0]:
             data["colors"] = colors[0].split(",")
         return data
+
+    def __init__(self, *args, **kwargs):
+        # Detect if this is a partial update (PATCH request)
+        partial = kwargs.pop("partial", False)
+        super().__init__(*args, **kwargs)
+
+        if partial:
+            # Make fields accept blank/empty/null values for PATCH requests
+            for _, field in self.fields.items():
+                if isinstance(field, serializers.ListField):
+                    field.allow_empty = True
+                    field.child.allow_blank = True
+                field.required = False

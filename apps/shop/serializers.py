@@ -43,11 +43,13 @@ class ProductSerializer(serializers.Serializer):
     image3 = serializers.CharField(source="image3_url")
 
     def get_sizes(self, obj: Product):
-        sizes = obj.sizes_ or obj.sizes.all()
+        sizes = obj.sizes_ if hasattr(obj, "sizes_") and obj.sizes_ else obj.sizes.all()
         return [size.value for size in sizes]
 
     def get_colors(self, obj: Product):
-        colors = obj.colors_ or obj.colors.all()
+        colors = (
+            obj.colors_ if hasattr(obj, "colors_") and obj.colors_ else obj.colors.all()
+        )
         return [color.value for color in colors]
 
 

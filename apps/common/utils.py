@@ -24,8 +24,8 @@ def get_user_or_guest(user):
     return user, None
 
 
-def validate_request_data(request, serializer_class: Serializer):
-    serializer = serializer_class(data=request.data)
+def validate_request_data(request, serializer_class: Serializer, partial=False):
+    serializer = serializer_class(data=request.data, partial=partial)
     serializer.is_valid(raise_exception=True)
     return serializer.validated_data
 
