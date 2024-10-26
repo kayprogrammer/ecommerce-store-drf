@@ -24,4 +24,4 @@ COPY . /code
 
 EXPOSE 8000
 
-CMD ["gunicorn","--bind",":8000","--workers","2","--worker-class","uvicorn.workers.UvicornWorker","ecommerce_store.asgi"]
+CMD ["gunicorn","--bind",":8000","--workers","2","hr_base.wsgi"]
