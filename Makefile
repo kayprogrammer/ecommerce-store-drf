@@ -35,7 +35,7 @@ mig: # run with "make mig" or "make mig app='app'"
 	fi
 
 init:
-	python manage.py initial_data
+	python manage.py initd
 	
 test:
 	pytest --disable-warnings -vv -x

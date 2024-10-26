@@ -273,3 +273,10 @@ class OrdersView(APIView):
         return CustomResponse.success(
             message="Orders Fetched Successfully", data=serializer.data
         )
+
+# THINGS TO DO YOURSELF
+# UPDATE ORDER
+# INVENTORY MANAGEMENT
+# PRODUCT REVIEWS
+
+# I'LL MST LIKELY DO ALL THESE IN ANOTHER REPLICA

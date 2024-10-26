@@ -81,17 +81,17 @@ class CreateData(object):
         return seller
 
     def create_countries(self):
-        if Country.objects.exists():
-            return
-        country_instances = [
-            Country(
-                name=country["name"],
-                code=country["code"],
-                phone_code=country["phone_code"],
-            )
-            for country in COUNTRIES_DATA
-        ]
-        countries = Country.objects.bulk_create(country_instances)
+        countries = Country.objects.all()
+        if not countries.exists():
+            country_instances = [
+                Country(
+                    name=country["name"],
+                    code=country["code"],
+                    phone_code=country["phone_code"],
+                )
+                for country in COUNTRIES_DATA
+            ]
+            countries = Country.objects.bulk_create(country_instances)
         return countries
 
     def get_image(self, images_list, substring):

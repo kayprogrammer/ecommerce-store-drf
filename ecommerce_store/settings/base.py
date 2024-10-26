@@ -152,7 +152,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "ecommerce_store.wsgi.application"
-ASGI_APPLICATION = "socialnet.asgi.application"
+ASGI_APPLICATION = "ecommerce_store.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
