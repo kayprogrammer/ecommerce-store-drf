@@ -1,6 +1,5 @@
 from rest_framework.test import APITestCase
 from apps.accounts.auth import Authentication
-from apps.accounts.models import Otp
 from unittest import mock
 
 from apps.accounts.test_utils import TestAccountUtil
@@ -13,68 +12,84 @@ class TestAccounts(APITestCase):
     logout_url = "/api/v1/auth/logout/"
 
     def setUp(self):
-        self.new_user = TestAccountUtil.new_user()
-        verified_user = TestAccountUtil.verified_user()
-        self.verified_user = verified_user
+        self.user = TestAccountUtil.new_user()
 
     def test_google_login(self):
-        new_user = self.new_user
-
-        # Test for invalid credentials
+        # Test for invalid token
         response = self.client.post(
-            self.login_url,
-            {"email": "invalid@email.com", "password": "invalidpassword"},
+            self.google_login_url,
+            {"token": "invalid_token"},
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(
             response.json(),
             {
                 "status": "failure",
-                "code": ErrorCode.INVALID_CREDENTIALS,
-                "message": "Invalid credentials",
+                "code": ErrorCode.INVALID_TOKEN,
+                "message": "Invalid Auth Token",
             },
         )
 
-        # Test for unverified credentials (email)
+        # Test for valid token
+        with mock.patch("apps.accounts.auth.Google.validate") as mock_function:
+            expected_id_info = {"name": "Test GoogleUser", "email": "testgoogleuser@gmail.com", "picture": "https://img.com"}
+            mock_function.return_value = (expected_id_info, None, None)
+            response = self.client.post(
+                self.google_login_url,
+                {"token": "token"},
+            )
+            self.assertEqual(response.status_code, 201)
+            self.assertEqual(
+                response.json(),
+                {
+                    "status": "success",
+                    "message": "Tokens Generation successful",
+                    "data": {"access": mock.ANY, "refresh": mock.ANY},
+                },
+            )
+    
+    def test_facebook_login(self):
+        # Test for invalid token
         response = self.client.post(
-            self.login_url,
-            {"email": new_user.email, "password": "testpassword"},
+            self.facebook_login_url,
+            {"token": "invalid_token"},
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(
             response.json(),
             {
                 "status": "failure",
-                "code": ErrorCode.UNVERIFIED_USER,
-                "message": "Verify your email first",
+                "code": ErrorCode.INVALID_TOKEN,
+                "message": "Invalid Auth Token",
             },
         )
 
-        # Test for valid credentials and verified email address
-        new_user.is_email_verified = True
-        new_user.save()
-        response = self.client.post(
-            self.login_url,
-            {"email": new_user.email, "password": "testpassword"},
-        )
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(
-            response.json(),
-            {
-                "status": "success",
-                "message": "Login successful",
-                "data": {"access": mock.ANY, "refresh": mock.ANY},
-            },
-        )
+        # Test for valid token
+        with mock.patch("apps.accounts.auth.Facebook.validate") as mock_function:
+            expected_id_info = {"name": "Test FacebookUser", "email": "testfacebookuser@gmail.com", "picture": "https://img.com"}
+            mock_function.return_value = (expected_id_info, None, None)
+            response = self.client.post(
+                self.facebook_login_url,
+                {"token": "token"},
+            )
+            self.assertEqual(response.status_code, 201)
+            self.assertEqual(
+                response.json(),
+                {
+                    "status": "success",
+                    "message": "Tokens Generation successful",
+                    "data": {"access": mock.ANY, "refresh": mock.ANY},
+                },
+            )
 
     def test_refresh_token(self):
-        verified_user = self.verified_user
-        verified_user.refresh = Authentication.create_refresh_token()
-        verified_user.save()
+        user = self.user
+        user.refresh = Authentication.create_refresh_token()
+        user.save()
 
         # Test for invalid refresh token (invalid or expired)
         response = self.client.post(
-            self.refresh_url, {"refresh": "invalid_refresh_token"}
+            self.refresh_url, {"token": "invalid_refresh_token"}
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(
@@ -89,7 +104,7 @@ class TestAccounts(APITestCase):
         # Test for valid refresh token
         mock.patch("apps.accounts.auth.Authentication.decode_jwt", return_value=True)
         response = self.client.post(
-            self.refresh_url, {"refresh": verified_user.refresh}
+            self.refresh_url, {"token": user.refresh}
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(
@@ -102,7 +117,7 @@ class TestAccounts(APITestCase):
         )
 
     def test_logout(self):
-        auth_token = TestAccountUtil.auth_token(self.verified_user)
+        auth_token = TestAccountUtil.auth_token(self.user)
 
         # Ensures if authorized user logs out successfully
         bearer = {"HTTP_AUTHORIZATION": f"Bearer {auth_token}"}
@@ -122,6 +137,6 @@ class TestAccounts(APITestCase):
             {
                 "status": "failure",
                 "code": ErrorCode.INVALID_TOKEN,
-                "message": "Auth Token is Invalid or Expired!",
+                "message": "Access Token is Invalid or Expired!",
             },
         )

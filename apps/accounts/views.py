@@ -188,5 +188,5 @@ class LogoutView(APIView):
         user.access = user.refresh = None
         await user.asave()
         return CustomResponse.success(
-            message="Logout Successful",
+            message="Logout successful",
         )
