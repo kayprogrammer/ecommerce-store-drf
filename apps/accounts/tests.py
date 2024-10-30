@@ -136,8 +136,8 @@ class TestAccounts(APITestCase):
         )
 
         # Ensures if unauthorized user cannot log out
-        self.bearer = {"HTTP_AUTHORIZATION": f"invalid_token"}
-        response = self.client.get(self.logout_url, **self.bearer)
+        bearer = {"HTTP_AUTHORIZATION": f"invalid_token"}
+        response = self.client.get(self.logout_url, **bearer)
         self.assertEqual(response.status_code, 401)
         self.assertEqual(
             response.json(),

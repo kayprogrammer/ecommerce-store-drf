@@ -189,11 +189,7 @@ class ProductView(APIView):
             .aget_or_none(in_stock__gt=0, slug=kwargs["slug"])
         )
         if not product:
-            raise RequestError(
-                err_msg="Product does not exist!",
-                err_code=ErrorCode.NON_EXISTENT,
-                status_code=404,
-            )
+            raise NotFoundError("Product does not exist!")
 
         product_reviews = await sync_to_async(list)(
             product.reviews.select_related("user").order_by("-rating")
@@ -240,11 +236,7 @@ class ProductView(APIView):
         serializer.is_valid(raise_exception=True)
         product = await Product.objects.aget_or_none(slug=kwargs["slug"])
         if not product:
-            raise RequestError(
-                err_msg="Product does not exist!",
-                err_code=ErrorCode.NON_EXISTENT,
-                status_code=404,
-            )
+            raise NotFoundError("Product does not exist!")
         data = serializer.validated_data
         review, created = await Review.objects.select_related("user").aupdate_or_create(
             user=user,

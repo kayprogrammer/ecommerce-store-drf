@@ -1,3 +1,4 @@
+from unittest import mock
 from apps.accounts.test_utils import TestAccountUtil
 from apps.shop.models import Category, Product
 
@@ -19,3 +20,27 @@ class TestShopUtil:
             seller=seller, name="Test Product", defaults=product_data
         )
         return product
+
+    def product_data(product: Product):
+        category = product.category
+        return {
+            "seller": mock.ANY,
+            "name": product.name,
+            "slug": product.slug,
+            "desc": product.desc,
+            "price_old": str(product.price_old),
+            "price_current": str(product.price_current),
+            "category": {
+                "name": category.name,
+                "slug": category.slug,
+                "image": category.image_url,
+            },
+            "sizes": list(product.sizes.values_list("value", flat=True)),
+            "colors": list(product.colors.values_list("value", flat=True)),
+            "reviews_count": mock.ANY,
+            "avg_rating": mock.ANY,
+            "wishlisted": False,
+            "image1": product.image1_url,
+            "image2": product.image2_url,
+            "image3": product.image3_url,
+        }
