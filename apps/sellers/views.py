@@ -274,6 +274,7 @@ class OrdersView(APIView):
             message="Orders Fetched Successfully", data=serializer.data
         )
 
+
 # THINGS TO DO YOURSELF
 # UPDATE ORDER
 # INVENTORY MANAGEMENT

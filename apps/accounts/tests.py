@@ -5,6 +5,7 @@ from unittest import mock
 from apps.accounts.test_utils import TestAccountUtil
 from apps.common.exceptions import ErrorCode
 
+
 class TestAccounts(APITestCase):
     google_login_url = "/api/v1/auth/google/"
     facebook_login_url = "/api/v1/auth/facebook/"
@@ -32,7 +33,11 @@ class TestAccounts(APITestCase):
 
         # Test for valid token
         with mock.patch("apps.accounts.auth.Google.validate") as mock_function:
-            expected_id_info = {"name": "Test GoogleUser", "email": "testgoogleuser@gmail.com", "picture": "https://img.com"}
+            expected_id_info = {
+                "name": "Test GoogleUser",
+                "email": "testgoogleuser@gmail.com",
+                "picture": "https://img.com",
+            }
             mock_function.return_value = (expected_id_info, None, None)
             response = self.client.post(
                 self.google_login_url,
@@ -47,7 +52,7 @@ class TestAccounts(APITestCase):
                     "data": {"access": mock.ANY, "refresh": mock.ANY},
                 },
             )
-    
+
     def test_facebook_login(self):
         # Test for invalid token
         response = self.client.post(
@@ -66,7 +71,11 @@ class TestAccounts(APITestCase):
 
         # Test for valid token
         with mock.patch("apps.accounts.auth.Facebook.validate") as mock_function:
-            expected_id_info = {"name": "Test FacebookUser", "email": "testfacebookuser@gmail.com", "picture": "https://img.com"}
+            expected_id_info = {
+                "name": "Test FacebookUser",
+                "email": "testfacebookuser@gmail.com",
+                "picture": "https://img.com",
+            }
             mock_function.return_value = (expected_id_info, None, None)
             response = self.client.post(
                 self.facebook_login_url,
@@ -103,9 +112,7 @@ class TestAccounts(APITestCase):
 
         # Test for valid refresh token
         mock.patch("apps.accounts.auth.Authentication.decode_jwt", return_value=True)
-        response = self.client.post(
-            self.refresh_url, {"token": user.refresh}
-        )
+        response = self.client.post(self.refresh_url, {"token": user.refresh})
         self.assertEqual(response.status_code, 201)
         self.assertEqual(
             response.json(),

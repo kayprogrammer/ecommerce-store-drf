@@ -9,23 +9,23 @@ logger = logging.getLogger(__name__)
 LOG_LEVEL = "INFO"
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
         },
     },
-    'loggers': {
-        'drf_spectacular': {
-            'level': 'ERROR',
-            'handlers': ['console'],
-            'propagate': False,
+    "loggers": {
+        "drf_spectacular": {
+            "level": "ERROR",
+            "handlers": ["console"],
+            "propagate": False,
         },
-        'py.warnings': {
-            'level': 'ERROR',
-            'handlers': ['console'],
-            'propagate': False,
+        "py.warnings": {
+            "level": "ERROR",
+            "handlers": ["console"],
+            "propagate": False,
         },
     },
 }
