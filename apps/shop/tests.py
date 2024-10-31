@@ -10,6 +10,7 @@ class TestShop(APITestCase):
     base_url = "/api/v1/shop"
     product_categories_url = f"{base_url}/categories/"
     products_url = f"{base_url}/products/"
+    wishlist_url = f"{base_url}/wishlist/"
 
     maxDiff = None
 
@@ -119,5 +120,43 @@ class TestShop(APITestCase):
                     "created_at": mock.ANY,
                     "updated_at": mock.ANY,
                 },
+            },
+        )
+
+    def test_wishlist_fetch(self):
+        wishlist = TestShopUtil.wishlist()
+        response = self.client.get(self.wishlist_url, **self.bearer)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {
+                "status": "success",
+                "message": "Wishlist Products Fetched Successfully",
+                "data": {
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 100,
+                    "products": [TestShopUtil.product_data(wishlist.product)],
+                },
+            },
+        )
+
+    def test_toggle_wishlist(self):
+        # Test for non existent product error
+        response = self.client.get(
+            f"{self.wishlist_url}invalid_slug/", **self.bearer
+        )
+        self.check_product_not_found_error(response, False)
+
+        # Test for success
+        response = self.client.get(
+            f"{self.products_url}{self.product.slug}/", **self.bearer
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json(),
+            {
+                "status": "success",
+                "message": mock.ANY,
             },
         )

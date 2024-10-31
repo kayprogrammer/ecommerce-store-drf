@@ -1,6 +1,6 @@
 from unittest import mock
 from apps.accounts.test_utils import TestAccountUtil
-from apps.shop.models import Category, Product
+from apps.shop.models import Category, Product, Wishlist
 
 
 class TestShopUtil:
@@ -39,8 +39,14 @@ class TestShopUtil:
             "colors": list(product.colors.values_list("value", flat=True)),
             "reviews_count": mock.ANY,
             "avg_rating": mock.ANY,
-            "wishlisted": False,
+            "wishlisted": mock.ANY,
             "image1": product.image1_url,
             "image2": product.image2_url,
             "image3": product.image3_url,
         }
+
+    def wishlist():
+        wishlist, _ = Wishlist.objects.get_or_create(
+            user=TestAccountUtil.new_user(), product=TestShopUtil.product()
+        )
+        return wishlist

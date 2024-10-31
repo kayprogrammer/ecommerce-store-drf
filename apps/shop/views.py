@@ -324,11 +324,7 @@ class ToggleWishlistView(APIView):
         user, guest = get_user_or_guest(request.user)
         product = await Product.objects.aget_or_none(slug=kwargs["slug"])
         if not product:
-            raise RequestError(
-                err_msg="Product does not exist!",
-                err_code=ErrorCode.NON_EXISTENT,
-                status_code=404,
-            )
+            raise NotFoundError("Product does not exist!")
         wishlist, created = await Wishlist.objects.aget_or_create(
             user=user, guest=guest, product=product
         )
