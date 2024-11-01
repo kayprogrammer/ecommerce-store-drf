@@ -365,11 +365,7 @@ class ProductsByCategoryView(APIView):
         user, guest = get_user_or_guest(request.user)
         category = await Category.objects.aget_or_none(slug=kwargs["slug"])
         if not category:
-            raise RequestError(
-                err_msg="Category does not exist!",
-                err_code=ErrorCode.NON_EXISTENT,
-                status_code=404,
-            )
+            raise NotFoundError("Category does not exist!")
 
         products = await fetch_products(request, user, guest, {"category": category})
         paginated_data = self.paginator_class.paginate_queryset(products, request)

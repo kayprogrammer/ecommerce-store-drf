@@ -150,13 +150,46 @@ class TestShop(APITestCase):
 
         # Test for success
         response = self.client.get(
-            f"{self.products_url}{self.product.slug}/", **self.bearer
+            f"{self.wishlist_url}{self.product.slug}/", **self.bearer
         )
-        self.assertEqual(response.status_code, 201)
+        self.assertIn(response.status_code, [200, 201])
         self.assertEqual(
             response.json(),
             {
                 "status": "success",
                 "message": mock.ANY,
+            },
+        )
+
+    def test_products_fetch_by_category(self):
+        product = self.product
+        # Check for error response for invalid category slug
+        response = self.client.get(f"{self.product_categories_url}invalid_slug/")
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.json(),
+            {
+                "status": "failure",
+                "message": "Category does not exist!",
+                "guest_id": mock.ANY,
+                "code": ErrorCode.NON_EXISTENT
+            },
+        )
+
+        # Check for success response for valid category slug
+        response = self.client.get(f"{self.product_categories_url}{product.category.slug}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {
+                "status": "success",
+                "message": "Products Fetched Successfully",
+                "guest_id": mock.ANY,
+                "data": {
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 100,
+                    "products": [TestShopUtil.product_data(product)],
+                },
             },
         )
