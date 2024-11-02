@@ -75,7 +75,7 @@ class ProductDetailSerializer(ProductSerializer):
 
 
 class OrderItemProductSerializer(serializers.Serializer):
-    seller = UserSerializer()
+    seller = SellerSerializer()
     name = serializers.CharField()
     slug = serializers.SlugField()
     price = serializers.DecimalField(
@@ -86,8 +86,8 @@ class OrderItemProductSerializer(serializers.Serializer):
 class OrderItemSerializer(serializers.Serializer):
     product = OrderItemProductSerializer()
     quantity = serializers.IntegerField()
-    size = serializers.CharField(source="size.value")
-    color = serializers.CharField(source="color.value")
+    size = serializers.CharField(source="size.value", allow_null=True)
+    color = serializers.CharField(source="color.value", allow_null=True)
     total = serializers.FloatField(source="get_total")
 
 

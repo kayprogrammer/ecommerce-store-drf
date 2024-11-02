@@ -1,6 +1,6 @@
 from unittest import mock
 from apps.accounts.test_utils import TestAccountUtil
-from apps.shop.models import Category, Product, Wishlist
+from apps.shop.models import Category, OrderItem, Product, Wishlist
 
 
 class TestShopUtil:
@@ -20,6 +20,14 @@ class TestShopUtil:
             seller=seller, name="Test Product", defaults=product_data
         )
         return product
+
+    def orderitem():
+        user = TestAccountUtil.new_user()
+        product = TestShopUtil.product()
+        orderitem, _ = OrderItem.objects.get_or_create(
+            user=user, product=product, defaults={"quantity": 1}
+        )
+        return orderitem
 
     def product_data(product: Product):
         category = product.category

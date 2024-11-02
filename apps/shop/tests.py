@@ -11,6 +11,7 @@ class TestShop(APITestCase):
     product_categories_url = f"{base_url}/categories/"
     products_url = f"{base_url}/products/"
     wishlist_url = f"{base_url}/wishlist/"
+    cart_url = f"{base_url}/cart/"
 
     maxDiff = None
 
@@ -18,6 +19,7 @@ class TestShop(APITestCase):
         self.user = TestAccountUtil.new_user()
         self.category = TestShopUtil.category()
         self.product = TestShopUtil.product()
+        self.orderitem = TestShopUtil.orderitem()
 
         auth_token = TestAccountUtil.auth_token(self.user)
         self.bearer = {"HTTP_AUTHORIZATION": f"Bearer {auth_token}"}
@@ -143,9 +145,7 @@ class TestShop(APITestCase):
 
     def test_toggle_wishlist(self):
         # Test for non existent product error
-        response = self.client.get(
-            f"{self.wishlist_url}invalid_slug/", **self.bearer
-        )
+        response = self.client.get(f"{self.wishlist_url}invalid_slug/", **self.bearer)
         self.check_product_not_found_error(response, False)
 
         # Test for success
@@ -172,12 +172,14 @@ class TestShop(APITestCase):
                 "status": "failure",
                 "message": "Category does not exist!",
                 "guest_id": mock.ANY,
-                "code": ErrorCode.NON_EXISTENT
+                "code": ErrorCode.NON_EXISTENT,
             },
         )
 
         # Check for success response for valid category slug
-        response = self.client.get(f"{self.product_categories_url}{product.category.slug}/")
+        response = self.client.get(
+            f"{self.product_categories_url}{product.category.slug}/"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.json(),
@@ -190,6 +192,34 @@ class TestShop(APITestCase):
                     "last_page": 1,
                     "per_page": 100,
                     "products": [TestShopUtil.product_data(product)],
+                },
+            },
+        )
+
+    def test_cart_view(self):
+        orderitem = self.orderitem
+
+        # Check for items returned in cart
+        response = self.client.get(self.cart_url, **self.bearer)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {
+                "status": "success",
+                "message": "Cart Items Returned",
+                "data": {
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 100,
+                    "items": [
+                        {
+                            "product": mock.ANY,
+                            "quantity": 1,
+                            "size": None,
+                            "color": None,
+                            "total": mock.ANY,
+                        }
+                    ],
                 },
             },
         )
