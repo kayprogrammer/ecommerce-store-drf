@@ -431,7 +431,7 @@ class CartView(APIView):
         size = data.get("size")
         color = data.get("color")
 
-        product = await Product.objects.select_related("seller").aget_or_none(
+        product = await Product.objects.select_related("seller", "seller__user").aget_or_none(
             slug=data["slug"]
         )
         if not product:
@@ -458,7 +458,6 @@ class CartView(APIView):
             color=color,
             defaults={"quantity": quantity},
         )
-        print("Yayayayaya")
         resp_message_substring = "Updated In"
         status_code = 200
         if created:
