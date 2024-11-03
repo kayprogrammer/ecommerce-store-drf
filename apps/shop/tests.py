@@ -197,8 +197,6 @@ class TestShop(APITestCase):
         )
 
     def test_cart_view(self):
-        orderitem = self.orderitem
-
         # Check for items returned in cart
         response = self.client.get(self.cart_url, **self.bearer)
         self.assertEqual(response.status_code, 200)
@@ -222,4 +220,17 @@ class TestShop(APITestCase):
                     ],
                 },
             },
+        )
+
+    def test_toggle_cart(self):
+        product = self.product
+        # Check for items to be added to cart successfully
+        response = self.client.post(
+            self.cart_url, {"slug": product.slug, "quantity": 1}, **self.bearer
+        )
+        self.assertIn(response.status_code, [200, 201])
+        response_json = response.json()
+        self.assertEqual(response_json["status"], "success")
+        self.assertIn(
+            response_json["message"], ["Item Added To Cart", "Item Updated In Cart", "Item Removed From Cart"]
         )

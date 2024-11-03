@@ -437,10 +437,9 @@ class CartView(APIView):
         if not product:
             raise ValidationErr("slug", "No Product with that slug")
         if not size and (await product.sizes.aexists()):
-            raise ValidationErr("size", "Enter a size")
+            raise ValidationErr("size", "Enter a size")    
         if not color and (await product.colors.aexists()):
             raise ValidationErr("color", "Enter a color")
-
         if size:
             size = await product.sizes.aget_or_none(value=size)
             if not size:
@@ -450,7 +449,6 @@ class CartView(APIView):
             color = await product.colors.aget_or_none(value=color)
             if not color:
                 raise ValidationErr("color", "Invalid color selected")
-
         orderitem, created = await OrderItem.objects.aupdate_or_create(
             user=user,
             guest=guest,
@@ -460,6 +458,7 @@ class CartView(APIView):
             color=color,
             defaults={"quantity": quantity},
         )
+        print("Yayayayaya")
         resp_message_substring = "Updated In"
         status_code = 200
         if created:
