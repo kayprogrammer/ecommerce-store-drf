@@ -18,7 +18,11 @@ class TestAccounts(APITestCase):
     def test_google_login(self):
         # Test for invalid token
         with mock.patch("apps.accounts.auth.Google.validate") as mock_function:
-            mock_function.return_value = (None, ErrorCode.INVALID_TOKEN, "Invalid Auth Token")
+            mock_function.return_value = (
+                None,
+                ErrorCode.INVALID_TOKEN,
+                "Invalid Auth Token",
+            )
             response = self.client.post(
                 self.google_login_url,
                 {"token": "invalid_token"},
@@ -58,7 +62,11 @@ class TestAccounts(APITestCase):
     def test_facebook_login(self):
         # Test for invalid token
         with mock.patch("apps.accounts.auth.Facebook.validate") as mock_function:
-            mock_function.return_value = (None, ErrorCode.INVALID_TOKEN, "Invalid Auth Token")
+            mock_function.return_value = (
+                None,
+                ErrorCode.INVALID_TOKEN,
+                "Invalid Auth Token",
+            )
             response = self.client.post(
                 self.facebook_login_url,
                 {"token": "invalid_token"},

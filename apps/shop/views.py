@@ -431,13 +431,13 @@ class CartView(APIView):
         size = data.get("size")
         color = data.get("color")
 
-        product = await Product.objects.select_related("seller", "seller__user").aget_or_none(
-            slug=data["slug"]
-        )
+        product = await Product.objects.select_related(
+            "seller", "seller__user"
+        ).aget_or_none(slug=data["slug"])
         if not product:
             raise ValidationErr("slug", "No Product with that slug")
         if not size and (await product.sizes.aexists()):
-            raise ValidationErr("size", "Enter a size")    
+            raise ValidationErr("size", "Enter a size")
         if not color and (await product.colors.aexists()):
             raise ValidationErr("color", "Enter a color")
         if size:

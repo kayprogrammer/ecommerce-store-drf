@@ -12,6 +12,7 @@ class TestShop(APITestCase):
     products_url = f"{base_url}/products/"
     wishlist_url = f"{base_url}/wishlist/"
     cart_url = f"{base_url}/cart/"
+    checkout_url = f"{base_url}/checkout/"
 
     maxDiff = None
 
@@ -232,5 +233,28 @@ class TestShop(APITestCase):
         response_json = response.json()
         self.assertEqual(response_json["status"], "success")
         self.assertIn(
-            response_json["message"], ["Item Added To Cart", "Item Updated In Cart", "Item Removed From Cart"]
+            response_json["message"],
+            ["Item Added To Cart", "Item Updated In Cart", "Item Removed From Cart"],
         )
+
+    def test_checkout(self):
+        data = {
+            "shipping": {
+                "full_name": "Test User",
+                "email": "test@example.com",
+                "phone": "+23412344565",
+                "address": "123, Test Street",
+                "city": "TestCity",
+                "state": "TestState",
+                "country": "TestCountry",
+                "zipcode": 123456,
+            },
+            "payment_method": "PAYSTACK",
+        }
+
+        # Check for successful checkout
+        response = self.client.post(self.checkout_url, data, **self.bearer)
+        self.assertEqual(response.status_code, 200)
+        response_json = response.json()
+        self.assertEqual(response_json["status"], "success")
+        self.assertEqual(response_json["message"], "Checkout Successful")
