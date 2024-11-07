@@ -307,7 +307,7 @@ class Order(IsDeletedModel):
         max_length=20, default="PENDING", choices=PAYMENT_STATUS_CHOICES
     )
     payment_method = models.CharField(
-        max_length=20, choices=PAYMENT_GATEWAY_CHOICES, null=True
+        max_length=20, choices=PAYMENT_GATEWAY_CHOICES, default="PAYSTACK"
     )
     coupon = models.ForeignKey(Coupon, on_delete=models.SET_NULL, blank=True, null=True)
     date_delivered = models.DateTimeField(null=True, blank=True)

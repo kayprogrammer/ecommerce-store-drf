@@ -21,11 +21,11 @@ class TestShopUtil:
         )
         return product
 
-    def orderitem():
+    def orderitem(order=None):
         user = TestAccountUtil.new_user()
         product = TestShopUtil.product()
         orderitem, _ = OrderItem.objects.get_or_create(
-            user=user, product=product, defaults={"quantity": 1}
+            user=user, product=product, order=order, defaults={"quantity": 1}
         )
         return orderitem
 

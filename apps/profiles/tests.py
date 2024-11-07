@@ -11,6 +11,7 @@ from apps.profiles.test_utils import TestProfileUtil
 class TestProfiles(APITestCase):
     base_url = "/api/v1/profiles"
     shipping_address_url = f"{base_url}/shipping_addresses/"
+    orders_url = f"{base_url}/orders/"
 
     maxDiff = None
 
@@ -19,6 +20,7 @@ class TestProfiles(APITestCase):
         self.shipping_addr = TestProfileUtil.shipping_address(self.user)
         auth_token = TestAccountUtil.auth_token(self.user)
         self.bearer = {"HTTP_AUTHORIZATION": f"Bearer {auth_token}"}
+        self.order = TestProfileUtil.order(self.user)
 
     def test_retrieve_profile(self):
         user = self.user
@@ -76,9 +78,7 @@ class TestProfiles(APITestCase):
 
     def test_retrieve_shipping_addresses(self):
         addr = self.shipping_addr
-        response = self.client.get(
-            self.shipping_address_url, **self.bearer
-        )
+        response = self.client.get(self.shipping_address_url, **self.bearer)
         self.assertEqual(response.status_code, 200)
         result = response.json()
         self.assertEqual(result["status"], "success")
@@ -112,9 +112,7 @@ class TestProfiles(APITestCase):
             "zipcode": 54321,
         }
         # Check for error response due to invalid country
-        response = self.client.post(
-            self.shipping_address_url, data, **self.bearer
-        )
+        response = self.client.post(self.shipping_address_url, data, **self.bearer)
         self.assertEqual(response.status_code, 422)
         result = response.json()
         self.assertEqual(result["status"], "failure")
@@ -124,9 +122,7 @@ class TestProfiles(APITestCase):
 
         # Check for successful creation of shipping address
         data["country"] = TestAccountUtil.country().name
-        response = self.client.post(
-            self.shipping_address_url, data, **self.bearer
-        )
+        response = self.client.post(self.shipping_address_url, data, **self.bearer)
         self.assertEqual(response.status_code, 201)
         result = response.json()
         self.assertEqual(result["status"], "success")
@@ -158,7 +154,9 @@ class TestProfiles(APITestCase):
     def test_retrieve_single_shipping_addresses(self):
         addr = self.shipping_addr
         # Test for address not found
-        response = self.client.get(f"{self.shipping_address_url}{str(uuid.uuid4())}/", **self.bearer)
+        response = self.client.get(
+            f"{self.shipping_address_url}{str(uuid.uuid4())}/", **self.bearer
+        )
         self.check_addr_not_found_error(response)
 
         # Test for address successfully returned
@@ -188,7 +186,7 @@ class TestProfiles(APITestCase):
         data = {
             "full_name": "Test User Updated",
             "email": "testupdated@eaee.com",
-            "phone": "+234125678",
+            "phone": "+234123585335678",
             "address": "123, Whatever street updated",
             "city": "City updated",
             "state": "State updated",
@@ -198,12 +196,14 @@ class TestProfiles(APITestCase):
 
         addr = self.shipping_addr
         # Test for address not found
-        response = self.client.put(f"{self.shipping_address_url}{str(uuid.uuid4())}/", data, **self.bearer)
+        response = self.client.put(
+            f"{self.shipping_address_url}{str(uuid.uuid4())}/", data, **self.bearer
+        )
         self.check_addr_not_found_error(response)
 
         # Check for error response due to invalid country
         response = self.client.put(
-            self.shipping_address_url, data, **self.bearer
+            f"{self.shipping_address_url}{addr.id}/", data, **self.bearer
         )
         self.assertEqual(response.status_code, 422)
         result = response.json()
@@ -232,6 +232,30 @@ class TestProfiles(APITestCase):
                 "state": data["state"],
                 "country": data["country"],
                 "zipcode": data["zipcode"],
-                "id": addr.id,
+                "id": str(addr.id),
             },
         )
+
+    def test_delete_shipping_address(self):
+        addr = self.shipping_addr
+        # Test for address not found
+        response = self.client.delete(
+            f"{self.shipping_address_url}{str(uuid.uuid4())}/", **self.bearer
+        )
+        self.check_addr_not_found_error(response)
+
+        # Check for successful delete of shipping address
+        response = self.client.delete(
+            f"{self.shipping_address_url}{addr.id}/", **self.bearer
+        )
+        self.assertEqual(response.status_code, 200)
+        result = response.json()
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["message"], "Shipping address deleted successfully")
+
+    def test_retrieve_orders(self):
+        response = self.client.get(self.orders_url, **self.bearer)
+        self.assertEqual(response.status_code, 200)
+        result = response.json()
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["message"], "Orders Fetched Successfully")
