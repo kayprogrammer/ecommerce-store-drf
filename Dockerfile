@@ -32,4 +32,5 @@ RUN chmod +x /release.sh
 # Expose port for Fly.io
 EXPOSE 8000
 
-ENTRYPOINT ["/release.sh"]
+CMD ["/release.sh"]
+

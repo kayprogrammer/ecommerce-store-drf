@@ -11,4 +11,4 @@ python manage.py initd
 echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear
 
-exec gunicorn --bind :8000 --workers 2 --worker-class uvicorn.workers.UvicornWorker ecommerce_store.asgi
+gunicorn --bind :8000 --workers 2 --worker-class uvicorn.workers.UvicornWorker ecommerce_store.asgi
