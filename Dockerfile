@@ -21,9 +21,9 @@ RUN set -ex && \
     pip install -r /tmp/requirements.txt && \
     rm -rf /root/.cache/
 
-RUN python3 manage.py migrate --noinput
-RUN python3 manage.py initd
-RUN python3 manage.py collectstatic --noinput --clear
+RUN python manage.py migrate --noinput
+RUN python manage.py initd
+RUN python manage.py collectstatic --noinput --clear
 
 COPY . /code
 
