@@ -32,4 +32,4 @@ RUN chmod +x /entrypoint.sh
 # Expose port for Fly.io
 EXPOSE 8000
 
-ENTRYPOINT ["/bin/sh", "/release.sh"]
+ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
