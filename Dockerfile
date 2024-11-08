@@ -1,3 +1,4 @@
+# Dockerfile
 ARG PYTHON_VERSION=3.12-slim
 
 FROM python:${PYTHON_VERSION}
@@ -5,28 +6,33 @@ FROM python:${PYTHON_VERSION}
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# install psycopg2 dependencies.
+# Install dependencies for psycopg2
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
+# Create and set working directory
 RUN mkdir -p /code
-
 WORKDIR /code
 
+# Install dependencies
 COPY requirements.txt /tmp/requirements.txt
-RUN set -ex && \
-    pip install --upgrade pip && \
+RUN pip install --upgrade pip && \
     pip install -r /tmp/requirements.txt && \
     rm -rf /root/.cache/
 
+# Copy project files
 COPY . /code
 
-RUN python manage.py migrate --noinput
-RUN python manage.py initd
-RUN python manage.py collectstatic --noinput --clear
+# Copy and set release
+COPY release.sh /release.sh
+RUN chmod +x /release.sh
 
+# Expose port for Fly.io
 EXPOSE 8000
 
+ENTRYPOINT ["/release.sh"]
+
+# Start the application using Gunicorn
 CMD ["gunicorn","--bind",":8000","--workers","2","--worker-class","uvicorn.workers.UvicornWorker","ecommerce_store.asgi"]

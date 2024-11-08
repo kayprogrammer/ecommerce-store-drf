@@ -1,11 +1,14 @@
 # release.sh
-#!/bin/bash
+#!/bin/sh
+set -e
 
-# Run Django migrations
+echo "Running migrations..."
 python manage.py migrate --noinput
 
-# Run the initial data creation
+echo "Running initial setup..."
 python manage.py initd
 
-# Create static files
+echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear
+
+exec "$@"
