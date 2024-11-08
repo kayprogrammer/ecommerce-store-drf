@@ -131,12 +131,12 @@ class ProductsBySellerView(APIView):
         product = await Product.objects.aget_or_none(
             seller=user.seller, slug=kwargs["slug"]
         )
+
         if not product:
             raise NotFoundError(err_msg="User owns no product with that slug")
         data = validate_request_data(request, self.serializer_entry_class, True)
         data, sizes, colors = await validate_category_sizes_colors(data)
-
-        product = set_dict_attr(product, data)
+        # product = set_dict_attr(product, data)
         await product.asave()
 
         # Set sizes and colors
@@ -280,4 +280,4 @@ class OrdersView(APIView):
 # INVENTORY MANAGEMENT
 # PRODUCT REVIEWS
 
-# I'LL MST LIKELY DO ALL THESE IN ANOTHER REPLICA
+# I'LL MOST LIKELY DO ALL THESE IN ANOTHER REPLICA

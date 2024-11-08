@@ -46,6 +46,7 @@ class TestAccountUtil:
             "last_name": "Seller",
             "email": "testseller@example.com",
             "password": make_password(settings.SOCIAL_SECRET),
+            "account_type": "SELLER",
         }
         user, _ = User.objects.get_or_create(
             email=user_dict["email"], defaults=user_dict
@@ -72,6 +73,7 @@ class TestAccountUtil:
             "agree_to_terms": True,
             "expected_sales_volume": "2000",
             "preferred_shipping_method": "standard",
+            "is_approved": True,
         }
         seller, _ = Seller.objects.get_or_create(user=user, defaults=seller_dict)
         category, _ = Category.objects.get_or_create(name="Test Category")

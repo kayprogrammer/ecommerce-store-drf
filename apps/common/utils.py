@@ -3,6 +3,7 @@ from django.db.models.functions import Coalesce
 from rest_framework.serializers import Serializer
 from apps.accounts.models import GuestUser
 from apps.shop.models import Wishlist
+from django.core.files.storage import Storage
 
 
 def REVIEWS_AND_RATING_WISHLISTED_CARTED_ANNOTATION(user, guest):
@@ -34,3 +35,21 @@ def set_dict_attr(obj, data):
     for attr, value in data.items():
         setattr(obj, attr, value)
     return obj
+
+
+class InMemoryStorage(Storage):
+    _data = {}
+
+    def _save(self, name, content):
+        self._data[name] = content
+        return name
+
+    def open(self, name, mode="rb"):
+        return self._data[name]
+
+    def exists(self, name):
+        return name in self._data
+
+    def url(self, name):
+        # Return a placeholder URL for testing purposes
+        return f"http://testserver/media/{name}"

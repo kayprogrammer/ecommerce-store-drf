@@ -1,4 +1,4 @@
-# ECOMMERCE STORE (DJANGO REST FRAMEWORK) (WORK IN PROGRESS)
+# ECOMMERCE STORE (DJANGO REST FRAMEWORK)
 
 ![alt text](https://github.com/kayprogrammer/ecommerce-store-drf/blob/main/display/drf.png?raw=true)
 
@@ -46,3 +46,18 @@ OR
 ```bash
     $ make test
 ```
+
+## Docs
+#### API Url: [E-Store DRF Swagger Docs](estore-drf.fly.dev/) 
+
+![alt text](https://github.com/kayprogrammer/ecommerce-store-drf/blob/main/display/disp1.png?raw=true)
+
+![alt text](https://github.com/kayprogrammer/ecommerce-store-drf/blob/main/display/disp2.png?raw=true)
+
+![alt text](https://github.com/kayprogrammer/ecommerce-store-drf/blob/main/display/disp3.png?raw=true)
+
+
+## ADMIN PAGE [E-Store Admin](estore-drf.fly.dev/admin/) 
+Check .env.example file for admin credentials
+
+![alt text](https://github.com/kayprogrammer/ecommerce-store-drf/blob/main/display/admin.png?raw=true)

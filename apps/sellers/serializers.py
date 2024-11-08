@@ -33,9 +33,9 @@ class SellerSerializer(serializers.Serializer):
     bank_routing_number = serializers.CharField(max_length=50)
     account_holder_name = serializers.CharField(max_length=255)
 
-    government_id = serializers.FileField()
-    proof_of_address = serializers.FileField()
-    business_license = serializers.FileField(required=False, allow_null=True)
+    government_id = serializers.ImageField()
+    proof_of_address = serializers.ImageField()
+    business_license = serializers.ImageField(required=False, allow_null=True)
 
     product_categories = serializers.ListField(
         child=serializers.CharField(), min_length=1, source="product_categories.name"
@@ -82,8 +82,8 @@ class ProductCreateSerializer(serializers.Serializer):
     @property
     def validated_data(self):
         data = super().validated_data
-        sizes = data["sizes"]
-        colors = data["colors"]
+        sizes = data.get("sizes", [])
+        colors = data.get("colors", [])
 
         # This is for fixing a swagger issue. It returns list items as ['Cars,Shoes'] instead of ['Cars', 'Shoes']
         # A normal consuming of the api won't have such problem
