@@ -81,11 +81,6 @@ def handler500(request, exception=None):
     response.status_code = 500
     return response
 
-
-handler404 = handler404
-handler500 = handler500
-
-
 class CustomSwaggerView(SpectacularSwaggerView):
     template_name = "custom_swagger.html"
 

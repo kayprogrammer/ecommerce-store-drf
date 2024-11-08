@@ -10,7 +10,6 @@ console_command = '/code/manage.py shell'
 [build]
 
 [deploy]
-  release_command = 'sh release.sh'
 
 [env]
   PORT = '8000'
