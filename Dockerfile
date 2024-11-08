@@ -25,12 +25,11 @@ RUN pip install --upgrade pip && \
 # Copy project files
 COPY . /code
 
-# Copy and set release
-COPY release.sh /release.sh
-RUN chmod +x /release.sh
+# Copy and set entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose port for Fly.io
 EXPOSE 8000
 
-CMD ["/release.sh"]
-
+ENTRYPOINT ["/entrypoint.sh"]

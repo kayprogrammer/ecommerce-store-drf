@@ -12,3 +12,4 @@ echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear
 
 gunicorn --bind :8000 --workers 2 --worker-class uvicorn.workers.UvicornWorker ecommerce_store.asgi
+exec "$@"
