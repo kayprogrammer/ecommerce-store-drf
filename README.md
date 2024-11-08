@@ -48,7 +48,7 @@ OR
 ```
 
 ## Docs
-#### API Url: [E-Store DRF Swagger Docs](estore-drf.fly.dev/) 
+#### API Url: [E-Store DRF Swagger Docs](https://estore-drf.fly.dev/) 
 
 ![alt text](https://github.com/kayprogrammer/ecommerce-store-drf/blob/main/display/disp1.png?raw=true)
 
@@ -57,7 +57,7 @@ OR
 ![alt text](https://github.com/kayprogrammer/ecommerce-store-drf/blob/main/display/disp3.png?raw=true)
 
 
-## ADMIN PAGE [E-Store Admin](estore-drf.fly.dev/admin/) 
+## ADMIN PAGE [E-Store Admin](https://estore-drf.fly.dev/admin/) 
 Check .env.example file for admin credentials
 
 ![alt text](https://github.com/kayprogrammer/ecommerce-store-drf/blob/main/display/admin.png?raw=true)
