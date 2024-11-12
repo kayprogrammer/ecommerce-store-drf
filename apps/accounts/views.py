@@ -35,7 +35,7 @@ class GoogleAuthView(APIView):
         description="""
             This endpoint generates token for authentication and authorization.
             When you click on the Try It Out button, there will be a button for you to generate a google auth token.
-            This is to help you test the API without having to create your own facebook frontend/client to test with.
+            This is to help you test the API without having to create your own google frontend/client to test with.
         """,
         tags=tags,
         responses=AUTH_RESPONSE,
@@ -87,7 +87,7 @@ class FacebookAuthView(APIView):
         description="""
             This endpoint generates token for authentication and authorization.
             When you click on the Try It Out button, there will be a button for you to generate a facebook auth token.
-            This is to help you test the API without having to create your own google frontend/client to test with.
+            This is to help you test the API without having to create your own facebook frontend/client to test with.
         """,
         tags=tags,
         responses=AUTH_RESPONSE,
